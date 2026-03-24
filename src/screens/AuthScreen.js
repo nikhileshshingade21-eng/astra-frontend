@@ -4,6 +4,8 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CameraView } from 'expo-camera';
 import { API_BASE } from '../api/config';
+import { fetchWithTimeout } from '../utils/api';
+import { getUniqueDeviceId } from '../utils/device';
 import { STUDENTS } from '../data/students';
 
 const colors = {
@@ -114,13 +116,10 @@ export default function AuthScreen({ route, navigation }) {
         // Student Role Validation against registry
         if (role === 'student' && tab === 'register') {
             try {
-                const res = await fetch(`${API_BASE}/api/auth/verify`, {
+                const deviceId = await getUniqueDeviceId();
+                const res = await fetchWithTimeout(`/api/auth/verify`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'bypass-tunnel-reminder': 'true'
-                    },
-                    body: JSON.stringify({ roll_number: idToCheck.trim() })
+                    body: JSON.stringify({ roll_number: idToCheck.trim(), device_id: deviceId })
                 });
 
                 if (!res.ok) {
@@ -129,7 +128,7 @@ export default function AuthScreen({ route, navigation }) {
                 }
             } catch (err) {
                 console.error('Registry link failed:', err);
-                return setFormError(`Network error: ${err.message}. Check your internet and Railway logs.`);
+                return setFormError(`Network error: ${err.message}. Please try again.`);
             }
         }
 
@@ -359,27 +358,21 @@ export default function AuthScreen({ route, navigation }) {
     const finishLogin = async () => {
         setLoading(true);
         try {
+            const deviceId = await getUniqueDeviceId();
             let res;
             if (tab === 'login') {
-                res = await fetch(`${API_BASE}/api/auth/login`, {
+                res = await fetchWithTimeout(`/api/auth/login`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'bypass-tunnel-reminder': 'true'
-                    },
-                    body: JSON.stringify({ roll_number: loginId, password: loginPass })
+                    body: JSON.stringify({ roll_number: loginId, password: loginPass, device_id: deviceId })
                 });
             } else {
-                        res = await fetch(`${API_BASE}/api/auth/register`, {
+                        res = await fetchWithTimeout(`/api/auth/register`, {
                         method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'bypass-tunnel-reminder': 'true'
-                        },
                         body: JSON.stringify({
                             roll_number: regId, name: regName, password: regPass,
                             email, phone, programme, section, role,
                             biometric_enrolled: true, face_enrolled: true,
+                            device_id: deviceId,
                             // Send the captured identity templates
                             biometric_template: { type: 'fp_template', data: Array.from({length: 64}, () => Math.random()) },
                             face_template: { type: 'face_base64', data: faceBase64 || "NO_FACE_CAPTURED" }

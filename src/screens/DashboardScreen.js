@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { API_BASE } from '../api/config';
 import { Ionicons } from '@expo/vector-icons';
+import { fetchWithTimeout } from '../utils/api';
 import SilentPingComponent from '../components/SilentPingComponent';
 
 const colors = {
@@ -24,7 +25,7 @@ export default function DashboardScreen({ route, navigation }) {
     const loadDashboard = async () => {
         try {
             const token = await AsyncStorage.getItem('token');
-            const res = await fetch(`${API_BASE}/api/dashboard/stats`, {
+            const res = await fetchWithTimeout(`/api/dashboard/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {

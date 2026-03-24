@@ -1,24 +1,5 @@
-import React from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, StatusBar } from 'react-native';
-import { useFonts } from 'expo-font';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import AuthScreen from './src/screens/AuthScreen';
-import RoleSelectionScreen from './src/screens/RoleSelectionScreen';
-import MainTabNavigator from './src/navigation/MainTabNavigator';
-import StudentDirectoryScreen from './src/screens/StudentDirectoryScreen';
-import QRScreen from './src/screens/QRScreen';
-import TrackerScreen from './src/screens/TrackerScreen';
-import ZoneManagementScreen from './src/screens/ZoneManagementScreen';
-import ToolsScreen from './src/screens/ToolsScreen';
-import RealTimeMapScreen from './src/screens/RealTimeMapScreen';
-import VerificationScreen from './src/screens/VerificationScreen';
-import AIChatbotScreen from './src/screens/AIChatbotScreen';
-import MarketplaceScreen from './src/screens/MarketplaceScreen';
-import FeedbackScreen from './src/screens/FeedbackScreen';
-
-// Standard professional theme colors
 const colors = {
   bg0: '#0f172a',
   bg1: '#1e293b',
@@ -37,6 +18,10 @@ const colors = {
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  const [userToken, setUserToken] = React.useState(null);
+  const [initialUser, setInitialUser] = React.useState(null);
+  const [isLoadingSession, setIsLoadingSession] = React.useState(true);
+
   const [fontsLoaded] = useFonts({
     'Tanker': require('./assets/fonts/Tanker-Regular.ttf'),
     'Satoshi': require('./assets/fonts/Satoshi-Regular.ttf'),
@@ -44,7 +29,26 @@ export default function App() {
     'Satoshi-Bold': require('./assets/fonts/Satoshi-Bold.ttf'),
   });
 
-  if (!fontsLoaded) {
+  React.useEffect(() => {
+    const bootstrapAsync = async () => {
+      let token;
+      let user;
+      try {
+        token = await AsyncStorage.getItem('token');
+        const userJson = await AsyncStorage.getItem('user');
+        if (userJson) user = JSON.parse(userJson);
+      } catch (e) {
+        console.log('Restoration failed');
+      }
+      setUserToken(token);
+      setInitialUser(user);
+      setIsLoadingSession(false);
+    };
+
+    bootstrapAsync();
+  }, []);
+
+  if (!fontsLoaded || isLoadingSession) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.hot} />
@@ -64,20 +68,44 @@ export default function App() {
   return (
     <NavigationContainer theme={MyTheme}>
       <StatusBar barStyle="light-content" backgroundColor={colors.bg0} />
-      <Stack.Navigator initialRouteName="RoleSelection" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
-        <Stack.Screen name="Auth" component={AuthScreen} />
-        <Stack.Screen name="Main" component={MainTabNavigator} options={{ headerShown: false }} />
-        <Stack.Screen name="StudentDirectory" component={StudentDirectoryScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="QR" component={QRScreen} />
-        <Stack.Screen name="Tracker" component={TrackerScreen} />
-        <Stack.Screen name="ZoneManagement" component={ZoneManagementScreen} />
-        <Stack.Screen name="Tools" component={ToolsScreen} />
-        <Stack.Screen name="RealTimeMap" component={RealTimeMapScreen} />
-        <Stack.Screen name="Verification" component={VerificationScreen} />
-        <Stack.Screen name="AIChatbot" component={AIChatbotScreen} />
-        <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
-        <Stack.Screen name="Feedback" component={FeedbackScreen} />
+      <Stack.Navigator 
+        initialRouteName={userToken ? "Main" : "RoleSelection"} 
+        screenOptions={{ headerShown: false }}
+      >
+        {userToken ? (
+          <>
+            <Stack.Screen name="Main" component={MainTabNavigator} initialParams={{ user: initialUser }} />
+            <Stack.Screen name="StudentDirectory" component={StudentDirectoryScreen} />
+            <Stack.Screen name="QR" component={QRScreen} />
+            <Stack.Screen name="Tracker" component={TrackerScreen} />
+            <Stack.Screen name="ZoneManagement" component={ZoneManagementScreen} />
+            <Stack.Screen name="Tools" component={ToolsScreen} />
+            <Stack.Screen name="RealTimeMap" component={RealTimeMapScreen} />
+            <Stack.Screen name="Verification" component={VerificationScreen} />
+            <Stack.Screen name="AIChatbot" component={AIChatbotScreen} />
+            <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
+            <Stack.Screen name="Feedback" component={FeedbackScreen} />
+            {/* Allow going back to Auth if needed, though usually redirected by navigation actions */}
+            <Stack.Screen name="Auth" component={AuthScreen} />
+            <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
+            <Stack.Screen name="Auth" component={AuthScreen} />
+            <Stack.Screen name="Main" component={MainTabNavigator} />
+            <Stack.Screen name="StudentDirectory" component={StudentDirectoryScreen} />
+            <Stack.Screen name="QR" component={QRScreen} />
+            <Stack.Screen name="Tracker" component={TrackerScreen} />
+            <Stack.Screen name="ZoneManagement" component={ZoneManagementScreen} />
+            <Stack.Screen name="Tools" component={ToolsScreen} />
+            <Stack.Screen name="RealTimeMap" component={RealTimeMapScreen} />
+            <Stack.Screen name="Verification" component={VerificationScreen} />
+            <Stack.Screen name="AIChatbot" component={AIChatbotScreen} />
+            <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
+            <Stack.Screen name="Feedback" component={FeedbackScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Animated, ImageBackground } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Animated, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { API_BASE } from '../api/config';
 import { Ionicons } from '@expo/vector-icons';
+import { fetchWithTimeout } from '../utils/api';
 
 const colors = {
     bg0: '#0f172a', surf: 'rgba(255, 255, 255, 0.05)',
@@ -38,10 +40,14 @@ const getCurrentWeekDates = () => {
 const WEEK_DATES = getCurrentWeekDates();
 
 export default function TimetableScreen({ route, navigation }) {
-    const { user } = route.params || {};
+    const { user } = route.params || { user: { programme: 'B.Tech CSC', section: 'CS' } };
+    const programme = user.programme || 'B.Tech CSC';
+    const section = user.section || 'CS';
     const role = user?.role || 'student';
     const [classes, setClasses] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [currentTime, setCurrentTime] = useState(new Date());
     
     // Auto-select today or fallback to Monday
     const todayIndex = new Date().getDay() - 1;
@@ -50,27 +56,34 @@ export default function TimetableScreen({ route, navigation }) {
     
     const [pulseAnim] = useState(new Animated.Value(1));
 
-    const loadTimetable = async (day) => {
+    const loadTimetable = async (day, forceRefresh = false) => {
         try {
             const token = await AsyncStorage.getItem('token');
-            const res = await fetch(`${API_BASE}/api/timetable?day=${day}`, {
-                headers: { Authorization: `Bearer ${token}` }
+            const url = `/api/timetable/today?programme=${encodeURIComponent(programme)}&section=${encodeURIComponent(section)}${forceRefresh ? '&refresh=true' : ''}`;
+            
+            const res = await fetchWithTimeout(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
+
             if (res.ok) {
                 const data = await res.json();
-                setClasses(data.classes || []);
+                setClasses(data);
             }
         } catch (e) {
-            console.log('Error loading timetable', e);
+            console.log('Timetable err:', e);
         }
+        setLoading(false);
+        setRefreshing(false);
     };
 
-    useEffect(() => {
-        loadTimetable(selectedDay);
-    }, [selectedDay]);
+    // Refresh data when screen gains focus
+    useFocusEffect(
+        useCallback(() => {
+            loadTimetable(selectedDay);
+        }, [selectedDay])
+    );
 
     useEffect(() => {
-
         Animated.loop(
             Animated.sequence([
                 Animated.timing(pulseAnim, { toValue: 1.2, duration: 800, useNativeDriver: true }),
@@ -81,7 +94,7 @@ export default function TimetableScreen({ route, navigation }) {
 
     const onRefresh = async () => {
         setRefreshing(true);
-        await loadTimetable(selectedDay);
+        await loadTimetable(selectedDay, true); // Force refresh from DB
         setRefreshing(false);
     };
 
@@ -133,12 +146,13 @@ export default function TimetableScreen({ route, navigation }) {
             >
                 {classes.length > 0 ? (
                     classes.map((c, i) => {
-                        // Real-time logic for determining if class is active
                         const now = new Date();
                         const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
                         let isLive = false;
+                        let isEnded = false;
+                        let isLocked = selectedDay !== currentDay;
 
-                        if (selectedDay === currentDay && c.start_time) {
+                        if (c.start_time) {
                             const [startHourStr, startMinStr] = c.start_time.split(':');
                             const [endHourStr, endMinStr] = (c.end_time || '23:59').split(':');
 
@@ -146,11 +160,13 @@ export default function TimetableScreen({ route, navigation }) {
                             const startTime = new Date(`${todayStr}T${startHourStr.padStart(2, '0')}:${startMinStr.padStart(2, '0')}:00`);
                             const endTime = new Date(`${todayStr}T${endHourStr.padStart(2, '0')}:${endMinStr.padStart(2, '0')}:00`);
 
-                            isLive = now >= startTime && now <= endTime;
+                            if (!isLocked) {
+                                isLive = now >= startTime && now <= endTime;
+                                isEnded = now > endTime;
 
-                            const tenMinsBeforeEnd = new Date(endTime.getTime() - 10 * 60000);
-                            const isAttendanceOpen = isLive && now >= tenMinsBeforeEnd;
-                            c.isAttendanceOpen = isAttendanceOpen;
+                                const tenMinsBeforeEnd = new Date(endTime.getTime() - 10 * 60000);
+                                c.isAttendanceOpen = isLive && now >= tenMinsBeforeEnd;
+                            }
                         }
 
                         const subColor = getSubjectColor(c.code);
@@ -162,14 +178,22 @@ export default function TimetableScreen({ route, navigation }) {
                                     if (role === 'faculty' || role === 'admin') {
                                         navigation.navigate('Monitor', { classId: c.id });
                                     } else {
+                                        if (isLocked) {
+                                            Alert.alert('Restricted', 'Attendance can only be marked on the day of the class.');
+                                            return;
+                                        }
+                                        if (isEnded) {
+                                            Alert.alert('Session Ended', 'Attendance portal is closed for this session.');
+                                            return;
+                                        }
                                         navigation.navigate('Attendance', { classId: c.id });
                                     }
                                 }}
                             >
                                 <View style={styles.timeCol}>
-                                    <Text style={styles.timeText}>{c.start_time}</Text>
+                                    <Text style={styles.timeText}>{c.start_time.substring(0,5)}</Text>
                                     <View style={[styles.timeLine, { backgroundColor: subColor }]} />
-                                    <Text style={styles.timeText}>{c.end_time || '10:30'}</Text>
+                                    <Text style={styles.timeText}>{c.end_time.substring(0,5)}</Text>
                                 </View>
 
                                 <View style={styles.infoCol}>
@@ -190,16 +214,19 @@ export default function TimetableScreen({ route, navigation }) {
                                     </View>
                                 </View>
 
-                                <View style={[styles.statusBadge, c.attendance_status === 'present' ? styles.statusPresent : c.attendance_status === 'late' ? styles.statusLate : styles.statusPending]}>
+                                <View style={[styles.statusBadge]}>
                                     {c.attendance_status === 'present' ? (
-                                        <Ionicons name="checkmark-circle" size={14} color={colors.green} />
-                                    ) : c.isAttendanceOpen ? (
-                                        <View style={styles.openBadge}>
-                                            <Text style={styles.openText}>ATTENDANCE OPEN</Text>
+                                        <View style={{flexDirection:'row', alignItems:'center', gap:4}}>
+                                            <Ionicons name="checkmark-circle" size={16} color={colors.green} />
+                                            <Text style={[styles.statusText, {color: colors.green}]}>PRESENT</Text>
                                         </View>
+                                    ) : isEnded ? (
+                                        <Text style={[styles.statusText, { color: 'rgba(255,255,255,0.2)' }]}>{c.name.toUpperCase().includes('LAB') ? 'LAB ENDED' : 'CLASS ENDED'}</Text>
+                                    ) : isLocked ? (
+                                        <Ionicons name="lock-closed-outline" size={12} color="rgba(255,255,255,0.2)" />
                                     ) : (
-                                        <Text style={[styles.statusText, c.attendance_status === 'late' ? styles.textLate : styles.textPending]}>
-                                            {c.attendance_status || 'UPCOMING'}
+                                        <Text style={[styles.statusText, c.isAttendanceOpen ? {color: colors.green} : styles.textPending]}>
+                                            {c.isAttendanceOpen ? 'OPEN' : 'UPCOMING'}
                                         </Text>
                                     )}
                                 </View>

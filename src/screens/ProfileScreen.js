@@ -10,7 +10,11 @@ export default function ProfileScreen({ route, navigation }) {
 
     const handleLogout = async () => {
         await AsyncStorage.removeItem('token');
-        navigation.replace('Auth');
+        await AsyncStorage.removeItem('user');
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'RoleSelection' }],
+        });
     };
 
     return (

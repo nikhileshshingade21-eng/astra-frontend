@@ -94,7 +94,18 @@ export default function AttendanceScreen({ route }) {
                 return;
             }
 
-            // 2. API Call
+            // 2. Class validity check
+            const selectedClass = classes.find(c => c.id === selectedClassId);
+            const now = new Date();
+            const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
+            
+            if (selectedClass && selectedClass.day !== currentDay) {
+                setLoading(false);
+                Alert.alert('Restricted', `This class is scheduled for ${selectedClass.day}. Attendance is only permitted on the day of the session.`);
+                return;
+            }
+
+            // 3. API Call
             const token = await AsyncStorage.getItem('token');
             const res = await fetch(`${API_BASE}/api/attendance/mark`, {
                 method: 'POST',
