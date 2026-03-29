@@ -1,24 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { API_BASE } from '../api/config';
+﻿import React, { useState, useEffect } from 'react';
+import { 
+    View, 
+    Text, 
+    StyleSheet, 
+    FlatList, 
+    TextInput, 
+    TouchableOpacity, 
+    ActivityIndicator, 
+    Alert, 
+    RefreshControl,
+    StatusBar,
+    Dimensions,
+    Platform,
+    UIManager
+} from 'react-native';
+import * as SecureStore from '../utils/storage';
+import LinearGradient from 'react-native-linear-gradient';
+// import { BlurView } from '@react-native-community/blur';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import Animated, { FadeInDown, LayoutAnimation } from 'react-native-reanimated';
+import { fetchWithTimeout } from '../utils/api';
+
+const { width } = Dimensions.get('window');
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const colors = {
-    bg0: '#0f172a', surf: 'rgba(255, 255, 255, 0.05)',
-    hot: '#3b82f6', green: '#10b981', cyan: '#0ea5e9', purp: '#6366f1', border: 'rgba(255, 255, 255, 0.12)',
-    danger: '#ff3b5c'
+    bg: '#020617',
+    glass: 'rgba(255, 255, 255, 0.03)',
+    border: 'rgba(255, 255, 255, 0.08)',
+    textDim: 'rgba(255, 255, 255, 0.4)',
+    neonBlue: '#00f2ff',
+    neonGreen: '#00ffaa',
+    neonPink: '#ff00e5',
+    neonPurple: '#bf00ff',
+    hot: '#ff3d71'
 };
 
 export default function MarketplaceScreen({ route, navigation }) {
-    const { user } = route.params || {};
-
+    const { user } = route.params || { user: { id: 0 } };
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    
-    // New item states
     const [isAdding, setIsAdding] = useState(false);
     const [title, setTitle] = useState('');
     const [desc, setDesc] = useState('');
@@ -26,228 +51,164 @@ export default function MarketplaceScreen({ route, navigation }) {
 
     const loadItems = async () => {
         try {
-            const token = await AsyncStorage.getItem('token');
-            const res = await fetch(`${API_BASE}/api/marketplace/items`, {
+            const token = await SecureStore.getItemAsync('token');
+            const res = await fetchWithTimeout(`/api/marketplace/items`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (res.ok) {
-                const data = await res.json();
-                setItems(data.items || []);
+            if (res.ok && res.data) {
+                setItems(res.data.items || []);
+            } else {
+                console.warn('[Marketplace] Load items failed:', res.data?.error || res.status);
             }
-        } catch (e) {
-            console.log('Marketplace fetch err:', e);
-        }
+        } catch (e) {}
         setLoading(false);
         setRefreshing(false);
     };
 
     useEffect(() => { loadItems(); }, []);
 
-    const onRefresh = () => {
-        setRefreshing(true);
-        loadItems();
-    };
-
     const handleAddItem = async () => {
-        if (!title || !price) {
-            Alert.alert('Error', 'Title and Price are required.');
-            return;
-        }
+        if (!title || !price) return Alert.alert('DATA_VOID', 'Title and Price required.');
         try {
-            const token = await AsyncStorage.getItem('token');
-            const res = await fetch(`${API_BASE}/api/marketplace/items`, {
+            const token = await SecureStore.getItemAsync('token');
+            const res = await fetchWithTimeout(`/api/marketplace/items`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ title, description: desc, price: parseFloat(price) })
             });
-
-            if (res.ok) {
-                Alert.alert('Success', 'Item posted to campus marketplace!');
-                setIsAdding(false);
-                setTitle(''); setDesc(''); setPrice('');
+            if (res.ok && res.data) {
+                Alert.alert('LISTED', 'Item broadcast to campus node.');
+                setIsAdding(false); setTitle(''); setDesc(''); setPrice('');
                 loadItems();
             } else {
-                Alert.alert('Failed', 'Could not post item.');
+                Alert.alert('LIST_FAILED', res.data?.error || 'Could not post item.');
             }
-        } catch (e) {
-            console.log('Add item err:', e);
-        }
+        } catch (e) {}
     };
 
-    const handleMarkSold = async (id) => {
-        try {
-            const token = await AsyncStorage.getItem('token');
-            const res = await fetch(`${API_BASE}/api/marketplace/items/${id}/sold`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                Alert.alert('Success', 'Item marked as sold!');
-                loadItems();
-            }
-        } catch (e) {
-            console.log('Mark sold err:', e);
-        }
+    const handleDelete = async (id) => {
+        Alert.alert("PURGE", "Permanently remove this listing?", [
+            { text: "ABORT", style: "cancel" },
+            { text: "PURGE", style: "destructive", onPress: async () => {
+                try {
+                    const token = await SecureStore.getItemAsync('token');
+                    const res = await fetchWithTimeout(`/api/marketplace/items/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) loadItems();
+                } catch (e) {}
+            }}
+        ]);
     };
 
-    const handleDeleteItem = async (id) => {
-        Alert.alert(
-            "Delete Item",
-            "Are you sure you want to permanently delete this item?",
-            [
-                { text: "Cancel", style: "cancel" },
-                { text: "Delete", style: "destructive", onPress: async () => {
-                    try {
-                        const token = await AsyncStorage.getItem('token');
-                        const res = await fetch(`${API_BASE}/api/marketplace/items/${id}`, {
-                            method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        if (res.ok) {
-                            Alert.alert('Success', 'Item deleted.');
-                            loadItems();
-                        } else {
-                            Alert.alert('Failed', 'Could not delete item.');
-                        }
-                    } catch (e) {
-                        console.log('Delete err:', e);
-                    }
-                }}
-            ]
-        );
-    };
-
-    if (loading) {
-        return (
-            <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color={colors.cyan} />
+    const renderItem = ({ item, index }) => (
+        <Animated.View entering={FadeInDown.delay(index * 100)}>
+            <View blurType="dark" blurAmount={3} style={styles.card}>
+                <View style={styles.cardHeader}>
+                    <Text style={styles.itemTitle}>{(item.title || 'UNTITLED').toUpperCase()}</Text>
+                    <Text style={styles.itemPrice}>₹{item.price || 0}</Text>
+                </View>
+                <Text style={styles.itemDesc}>{item.description}</Text>
+                <View style={styles.cardFooter}>
+                    <View style={styles.meta}>
+                        <Ionicons name="person-outline" size={10} color={colors.textDim} />
+                        <Text style={styles.metaText}>ID_{item.seller_id || 'UNKNOWN'}</Text>
+                    </View>
+                    {item.seller_id === user.id ? (
+                        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
+                            <Ionicons name="trash-outline" size={16} color={colors.hot} />
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={styles.contactBtn}>
+                            <Text style={styles.contactText}>SECURE_CONTACT</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
-        );
-    }
+        </Animated.View>
+    );
 
     return (
         <View style={styles.container}>
+            <StatusBar barStyle="light-content" />
+            <LinearGradient colors={['#020617', '#0f172a']} style={StyleSheet.absoluteFill} />
+
             <View style={styles.header}>
-                <Text style={styles.title}>CAMPUS MARKET</Text>
-                <Text style={styles.subTitle}>Peer-to-Peer Trading Hub</Text>
+                <View>
+                    <Text style={styles.title}>CAMPUS_EXCHANGE</Text>
+                    <Text style={styles.sub}>P2P_TRADING_NODE_v2.0</Text>
+                </View>
+                <TouchableOpacity style={styles.addBtn} onPress={() => { setIsAdding(!isAdding); }}>
+                    <LinearGradient colors={[colors.neonBlue, colors.neonPurple]} style={styles.addBtnGrad}>
+                        <Ionicons name={isAdding ? "close" : "add"} size={24} color="#000" />
+                    </LinearGradient>
+                </TouchableOpacity>
             </View>
 
-            {isAdding ? (
-                <View style={styles.addForm}>
-                    <Text style={styles.formTitle}>POST NEW ITEM</Text>
-                    
-                    <View style={styles.inputGhost}>
-                        <Ionicons name="pricetag" size={20} color={colors.cyan} style={styles.inputIcon} />
-                        <TextInput style={styles.inputField} placeholder="Item Title (e.g. Physics Textbook)" placeholderTextColor="rgba(255,255,255,0.4)" value={title} onChangeText={setTitle} />
-                    </View>
-                    
-                    <View style={styles.inputGhost}>
-                        <Ionicons name="cash" size={20} color={colors.green} style={styles.inputIcon} />
-                        <TextInput style={styles.inputField} placeholder="Price (₹)" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" value={price} onChangeText={setPrice} />
-                    </View>
-
-                    <View style={[styles.inputGhost, { height: 80, alignItems: 'flex-start', paddingTop: 10 }]}>
-                        <Ionicons name="document-text" size={20} color={colors.purp} style={styles.inputIcon} />
-                        <TextInput style={[styles.inputField, { height: 60, textAlignVertical: 'top' }]} placeholder="Description (Optional)" placeholderTextColor="rgba(255,255,255,0.4)" multiline value={desc} onChangeText={setDesc} />
-                    </View>
-
-                    <View style={styles.formActions}>
-                        <TouchableOpacity style={[styles.btn, { backgroundColor: colors.surf, borderColor: colors.border, borderWidth: 1 }]} onPress={() => setIsAdding(false)}>
-                            <Text style={styles.btnText}>CANCEL</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.btn, { backgroundColor: colors.cyan }]} onPress={handleAddItem}>
-                            <Text style={styles.btnText}>POST ITEM</Text>
+            {isAdding && (
+                <View style={styles.form}>
+                    <View blurType="dark" blurAmount={10} style={styles.formGlass}>
+                        <Text style={styles.formLab}>INITIALIZE_LISTING</Text>
+                        <TextInput style={styles.input} placeholder="ITEM_TITLE..." placeholderTextColor="rgba(255,255,255,0.1)" value={title} onChangeText={setTitle} />
+                        <TextInput style={styles.input} placeholder="PRICE_VAL..." placeholderTextColor="rgba(255,255,255,0.1)" keyboardType="numeric" value={price} onChangeText={setPrice} />
+                        <TextInput style={[styles.input, { height: 80 }]} placeholder="DETAILED_LOG..." placeholderTextColor="rgba(255,255,255,0.1)" multiline value={desc} onChangeText={setDesc} />
+                        <TouchableOpacity style={styles.deployBtn} onPress={handleAddItem}>
+                            <LinearGradient colors={[colors.neonBlue, colors.neonPurple]} style={styles.deployGrad}>
+                                <Text style={styles.deployText}>TRANSMIT_LISTING</Text>
+                            </LinearGradient>
                         </TouchableOpacity>
                     </View>
                 </View>
-            ) : (
-                <TouchableOpacity style={styles.triggerAddBtn} onPress={() => setIsAdding(true)}>
-                    <LinearGradient colors={[colors.cyan, colors.purp]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
-                    <Ionicons name="add-circle" size={24} color="#fff" />
-                    <Text style={styles.triggerText}>SELL AN ITEM</Text>
-                </TouchableOpacity>
             )}
 
             <FlatList
                 data={items}
-                keyExtractor={item => item.id.toString()}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.cyan} />}
-                contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
-                ListEmptyComponent={<Text style={styles.emptyText}>No items available currently.</Text>}
-                renderItem={({ item }) => (
-                    <View style={styles.itemCard}>
-                        <View style={styles.itemHeader}>
-                            <Text style={styles.itemTitle}>{item.title}</Text>
-                            <Text style={styles.itemPrice}>₹{item.price.toFixed(2)}</Text>
-                        </View>
-                        <Text style={styles.itemDesc}>{item.description}</Text>
-                        
-                        <View style={styles.itemFooter}>
-                            <View style={styles.sellerBadge}>
-                                <Ionicons name="person" size={12} color="rgba(255,255,255,0.6)" />
-                                <Text style={styles.sellerName}>Seller ID: {item.seller_id}</Text>
-                            </View>
-
-                            {item.status === 'sold' ? (
-                                <Text style={styles.soldText}>SOLD OUT</Text>
-                            ) : (
-                                item.seller_id === user.id ? (
-                                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                                        <TouchableOpacity style={styles.markSoldBtn} onPress={() => handleMarkSold(item.id)}>
-                                            <Text style={styles.markSoldText}>MARK SOLD</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={[styles.markSoldBtn, { borderColor: colors.danger, backgroundColor: 'rgba(255, 59, 92, 0.1)' }]} onPress={() => handleDeleteItem(item.id)}>
-                                            <Ionicons name="trash" size={14} color={colors.danger} />
-                                        </TouchableOpacity>
-                                    </View>
-                                ) : (
-                                    <TouchableOpacity style={styles.buyBtn}>
-                                        <Text style={styles.buyText}>CONTACT SELLER</Text>
-                                    </TouchableOpacity>
-                                )
-                            )}
-                        </View>
+                renderItem={renderItem}
+                keyExtractor={item => (item.id || Math.random()).toString()}
+                contentContainerStyle={styles.list}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={loadItems} tintColor={colors.neonBlue} />}
+                ListEmptyComponent={
+                    <View style={styles.empty}>
+                        <Ionicons name="cart-outline" size={60} color={colors.textDim} />
+                        <Text style={styles.emptyText}>NO_ASSETS_DETECTED</Text>
                     </View>
-                )}
+                }
             />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.bg0 },
-    centerContainer: { flex: 1, backgroundColor: colors.bg0, justifyContent: 'center', alignItems: 'center' },
-    header: { padding: 24, paddingTop: 60, paddingBottom: 20 },
-    title: { fontFamily: 'Tanker', fontSize: 32, color: '#fff', letterSpacing: 1 },
-    subTitle: { fontFamily: 'Satoshi', fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 4 },
-    
-    emptyText: { color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 40, fontFamily: 'Satoshi' },
-    
-    triggerAddBtn: { marginHorizontal: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 18, borderRadius: 16, overflow: 'hidden' },
-    triggerText: { fontFamily: 'Tanker', fontSize: 20, color: '#fff', letterSpacing: 1 },
+    container: { flex: 1, backgroundColor: colors.bg },
+    header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    title: { fontFamily: 'Tanker', fontSize: 28, color: '#fff', letterSpacing: 1 },
+    sub: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.neonBlue, letterSpacing: 2, marginTop: 4 },
+    addBtn: { width: 44, height: 44, borderRadius: 12, overflow: 'hidden' },
+    addBtnGrad: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-    addForm: { margin: 24, padding: 20, backgroundColor: colors.surf, borderRadius: 20, borderWidth: 1, borderColor: colors.border },
-    formTitle: { fontFamily: 'Tanker', fontSize: 20, color: '#fff', marginBottom: 20, letterSpacing: 1 },
-    inputGhost: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginBottom: 12, paddingHorizontal: 16, height: 55 },
-    inputIcon: { marginRight: 12 },
-    inputField: { flex: 1, color: '#fff', fontFamily: 'Satoshi', fontSize: 16 },
-    formActions: { flexDirection: 'row', gap: 12, marginTop: 10 },
-    btn: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center' },
-    btnText: { fontFamily: 'Tanker', fontSize: 16, color: '#fff', letterSpacing: 1 },
+    list: { paddingHorizontal: 24, paddingBottom: 100 },
+    card: { padding: 20, borderRadius: 28, borderWidth: 1, borderColor: colors.border, marginBottom: 16, overflow: 'hidden' },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    itemTitle: { fontFamily: 'Tanker', fontSize: 18, color: '#fff' },
+    itemPrice: { fontFamily: 'Tanker', fontSize: 20, color: colors.neonGreen },
+    itemDesc: { fontFamily: 'Satoshi-Medium', fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 18 },
+    cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15, paddingTop: 15, borderTopWidth: 1, borderTopColor: colors.border },
+    meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    metaText: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.textDim },
+    contactBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: colors.neonBlue + '40' },
+    contactText: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.neonBlue, letterSpacing: 1 },
+    deleteBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.hot + '10', justifyContent: 'center', alignItems: 'center' },
 
-    itemCard: { backgroundColor: colors.surf, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: colors.border, marginBottom: 16 },
-    itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    itemTitle: { fontFamily: 'Tanker', fontSize: 22, color: '#fff', flex: 1, marginRight: 10 },
-    itemPrice: { fontFamily: 'Tanker', fontSize: 24, color: colors.green },
-    itemDesc: { fontFamily: 'Satoshi', fontSize: 14, color: 'rgba(255,255,255,0.6)', marginTop: 10, lineHeight: 20 },
-    itemFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border },
-    
-    sellerBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.3)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-    sellerName: { fontFamily: 'Satoshi-Bold', fontSize: 10, color: 'rgba(255,255,255,0.6)', letterSpacing: 1 },
-    
-    soldText: { fontFamily: 'Tanker', fontSize: 16, color: colors.hot, letterSpacing: 1 },
-    markSoldBtn: { backgroundColor: colors.surf, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border },
-    markSoldText: { fontFamily: 'Satoshi-Bold', fontSize: 11, color: '#fff', letterSpacing: 1 },
-    buyBtn: { backgroundColor: colors.cyan + '20', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.cyan },
-    buyText: { fontFamily: 'Satoshi-Bold', fontSize: 11, color: colors.cyan, letterSpacing: 1 }
+    form: { paddingHorizontal: 24, marginBottom: 25 },
+    formGlass: { padding: 25, borderRadius: 32, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', gap: 12 },
+    formLab: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.neonBlue, letterSpacing: 2, marginBottom: 5 },
+    input: { height: 48, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12, paddingHorizontal: 15, color: '#fff', fontFamily: 'Satoshi-Bold', fontSize: 13, borderWidth: 1, borderColor: colors.border },
+    deployBtn: { height: 50, borderRadius: 12, overflow: 'hidden', marginTop: 10 },
+    deployGrad: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    deployText: { fontFamily: 'Tanker', fontSize: 16, color: '#000', letterSpacing: 1 },
+
+    empty: { alignItems: 'center', marginTop: 100 },
+    emptyText: { fontFamily: 'Tanker', fontSize: 18, color: colors.textDim, marginTop: 20, letterSpacing: 1 }
 });
+

@@ -1,16 +1,18 @@
 {
+  "name": "astra-rn",
+  "displayName": "ASTRA",
   "expo": {
     "name": "astra-rn",
     "slug": "astra-rn",
-    "version": "1.0.0",
+    "version": "1.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#020617"
     },
     "ios": {
       "supportsTablet": true,
@@ -19,12 +21,14 @@
     "android": {
       "package": "com.nikhil.astra",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#020617",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
         "CAMERA",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -54,7 +58,9 @@
         {
           "faceIDPermission": "ASTRA uses biometric verification for secure attendance marking."
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-asset"
     ],
     "extra": {
       "eas": {

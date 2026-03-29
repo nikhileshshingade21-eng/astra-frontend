@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import DashboardScreen from '../screens/DashboardScreen';
 import TimetableScreen from '../screens/TimetableScreen';
 import AttendanceScreen from '../screens/AttendanceScreen';
@@ -71,17 +71,15 @@ export default function MainTabNavigator({ route }) {
                     }}
                 />
             )}
-            {role === 'student' && (
-                <Tab.Screen
-                    name="Profile"
-                    component={ProfileScreen}
-                    initialParams={{ user }}
-                    options={{ 
-                        tabBarLabel: 'PROFILE',
-                        tabBarIcon: ({ color }) => <Ionicons name="person" size={20} color={color} />
-                    }}
-                />
-            )}
+            <Tab.Screen
+                name="Profile"
+                component={ProfileScreen}
+                initialParams={{ user }}
+                options={{ 
+                    tabBarLabel: 'PROFILE',
+                    tabBarIcon: ({ color }) => <Ionicons name="person" size={20} color={color} />
+                }}
+            />
             {(role === 'faculty' || role === 'admin') && (
                 <Tab.Screen
                     name="Monitor"
@@ -105,12 +103,12 @@ export default function MainTabNavigator({ route }) {
                 />
             )}
             <Tab.Screen
-                name="Alerts"
+                name="Board"
                 component={AnnouncementsScreen}
                 initialParams={{ user }}
                 options={{ 
-                    tabBarLabel: 'ALERTS',
-                    tabBarIcon: ({ color }) => <Ionicons name="notifications" size={20} color={color} />
+                    tabBarLabel: 'BOARD',
+                    tabBarIcon: ({ color }) => <Ionicons name="newspaper" size={20} color={color} />
                 }}
             />
             <Tab.Screen

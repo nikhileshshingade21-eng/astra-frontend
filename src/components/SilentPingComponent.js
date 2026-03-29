@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Animated, Alert } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import LinearGradient from 'react-native-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import * as SecureStore from '../utils/storage';
 import { API_BASE } from '../api/config';
 
 const SilentPingComponent = ({ classId, className, onPingComplete }) => {
@@ -27,7 +27,7 @@ const SilentPingComponent = ({ classId, className, onPingComplete }) => {
 
     const completePing = async () => {
         try {
-            const token = await AsyncStorage.getItem('token');
+            const token = await SecureStore.getItemAsync('token');
             const res = await fetch(`${API_BASE}/api/admin/ping`, {
                 method: 'POST',
                 headers: {

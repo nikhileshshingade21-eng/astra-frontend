@@ -31,7 +31,11 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
+
+# expo-auth-session
+.expo-auth-session
 
 # typescript
 *.tsbuildinfo
@@ -39,3 +43,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# builds
+*.apk
+/web-build/
+dist/

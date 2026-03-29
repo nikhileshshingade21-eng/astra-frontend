@@ -1,5 +1,4 @@
-import * as Application from 'expo-application';
-import * as Device from 'expo-device';
+import DeviceInfo from 'react-native-device-info';
 import { Platform } from 'react-native';
 
 /**
@@ -9,16 +8,8 @@ import { Platform } from 'react-native';
  */
 export const getUniqueDeviceId = async () => {
     try {
-        if (Platform.OS === 'android') {
-            // Android ID is stable for the same app/signing key
-            return Application.getAndroidId();
-        } else if (Platform.OS === 'ios') {
-            // iOS Identifier for Vendor
-            return await Application.getIosIdForVendorAsync();
-        }
-        
-        // Fallback for other platforms or failures
-        return `anon_${Device.osBuildId || 'unknown'}`;
+        // DeviceInfo.getUniqueId() is consistent for the app/device
+        return await DeviceInfo.getUniqueId();
     } catch (e) {
         console.error('Failed to get Device ID:', e);
         return 'UNKNOWN_DEVICE_ID';
