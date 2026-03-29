@@ -4,7 +4,6 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as SecureStore from './src/utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import notificationService from './src/services/notificationService';
 
 import AuthScreen from './src/screens/AuthScreen';
 import RoleSelectionScreen from './src/screens/RoleSelectionScreen';
@@ -45,7 +44,6 @@ export default function App() {
   const [userToken, setUserToken] = React.useState(null);
   const [initialUser, setInitialUser] = React.useState(null);
   const [isSystemInitialized, setIsSystemInitialized] = React.useState(false);
-  const navigationRef = React.useRef();
 
   // In pure RN CLI, fonts are handled by native configuration
   // We'll assume they are linked via assets and used by fontFamily name directly
@@ -67,26 +65,7 @@ export default function App() {
         ]);
         
         setUserToken(token);
-        if (userJson) {
-          const user = JSON.parse(userJson);
-          setInitialUser(user);
-          
-          // 🔔 Initialize notifications if user is logged in
-          if (token && user._id) {
-            try {
-              await notificationService.initialize();
-              const hasPermission = await notificationService.requestPermission();
-              if (hasPermission) {
-                await notificationService.registerToken(user._id);
-                notificationService.setupForegroundHandler();
-                notificationService.setupBackgroundHandler();
-                console.log('✅ Notifications initialized for user:', user._id);
-              }
-            } catch (e) {
-              console.error('⚠️ Notification setup failed:', e);
-            }
-          }
-        }
+        if (userJson) setInitialUser(JSON.parse(userJson));
         
         clearTimeout(timer);
         setIsSystemInitialized(true);
@@ -113,16 +92,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <NavigationContainer 
-        theme={MyTheme}
-        ref={navigationRef}
-        onReady={() => {
-          // Setup notification opened handler when navigation is ready
-          if (userToken && initialUser) {
-            notificationService.setupNotificationOpenedHandler(navigationRef.current);
-          }
-        }}
-      >
+      <NavigationContainer theme={MyTheme}>
         <VersionChecker />
         <StatusBar barStyle="light-content" backgroundColor={colors.bg0} />
         <Stack.Navigator 
