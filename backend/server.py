@@ -24,6 +24,10 @@ from datetime import datetime, timedelta
 import json
 import io
 import csv
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+import pytz
+import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -66,6 +70,28 @@ http_client = httpx.AsyncClient(timeout=60.0)
 offline_queue: Dict[str, List[Dict]] = {}  # user_id -> [attendance_records]
 push_tokens: Dict[str, str] = {}  # user_id -> fcm_token
 notification_history: List[Dict] = []
+sent_notifications: Dict[str, Dict] = {}  # Prevent duplicates: class_id+user_id+type -> timestamp
+
+# ============================================
+# Firebase Cloud Messaging Setup
+# ============================================
+try:
+    import firebase_admin
+    from firebase_admin import credentials, messaging
+    
+    # Initialize Firebase (if credentials file exists)
+    firebase_cred_path = os.environ.get('FIREBASE_CREDENTIALS_PATH', '/app/backend/firebase-credentials.json')
+    if os.path.exists(firebase_cred_path):
+        cred = credentials.Certificate(firebase_cred_path)
+        firebase_admin.initialize_app(cred)
+        FIREBASE_AVAILABLE = True
+        logger.info("✅ Firebase Admin SDK initialized successfully")
+    else:
+        FIREBASE_AVAILABLE = False
+        logger.warning("⚠️ Firebase credentials not found - notifications will be simulated")
+except Exception as e:
+    FIREBASE_AVAILABLE = False
+    logger.warning(f"⚠️ Firebase initialization failed: {e}")
 
 # ============================================
 # Pydantic Models
@@ -114,6 +140,209 @@ class ExportRequest(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     format: str = "csv"  # csv, json, pdf
+
+# ============================================
+# CLASS DETECTION SCHEDULER
+# ============================================
+
+scheduler = AsyncIOScheduler(timezone=pytz.UTC)
+
+async def check_upcoming_classes():
+    """
+    Background job that runs every 1-5 minutes to detect:
+    1. Classes starting in 10-15 minutes (send reminder)
+    2. Classes that just started (send start notification)
+    """
+    try:
+        logger.info("🔍 Checking for upcoming and ongoing classes...")
+        
+        # Get current time in IST (India Standard Time - adjust to your timezone)
+        ist = pytz.timezone('Asia/Kolkata')
+        now = datetime.now(ist)
+        current_time = now.strftime("%H:%M")
+        current_day = now.strftime("%A")  # Monday, Tuesday, etc.
+        
+        # Fetch all timetables from Railway backend
+        try:
+            response = await http_client.get(f"{RAILWAY_BACKEND_URL}/api/timetable/all")
+            if response.status_code != 200:
+                logger.error(f"Failed to fetch timetables: {response.status_code}")
+                return
+            
+            timetables_data = response.json()
+            all_timetables = timetables_data.get('timetables', [])
+            
+        except Exception as e:
+            logger.error(f"Error fetching timetables: {e}")
+            return
+        
+        notification_count = 0
+        
+        # Process each user's timetable
+        for timetable in all_timetables:
+            user_id = timetable.get('user_id') or timetable.get('userId')
+            schedule = timetable.get('schedule', {})
+            
+            if not user_id or not schedule:
+                continue
+            
+            # Get today's classes
+            today_classes = schedule.get(current_day, [])
+            
+            for class_info in today_classes:
+                class_name = class_info.get('subject') or class_info.get('name', 'Class')
+                start_time = class_info.get('start_time') or class_info.get('startTime')
+                end_time = class_info.get('end_time') or class_info.get('endTime')
+                room = class_info.get('room', 'TBA')
+                
+                if not start_time:
+                    continue
+                
+                try:
+                    # Parse class start time
+                    class_start = datetime.strptime(start_time, "%H:%M").time()
+                    class_datetime = datetime.combine(now.date(), class_start)
+                    class_datetime = ist.localize(class_datetime)
+                    
+                    # Calculate time difference
+                    time_diff = (class_datetime - now).total_seconds() / 60  # minutes
+                    
+                    # Check if user has FCM token
+                    fcm_token = push_tokens.get(user_id)
+                    if not fcm_token:
+                        continue
+                    
+                    # SCENARIO 1: Class starting in 10-15 minutes
+                    if 10 <= time_diff <= 15:
+                        notification_key = f"{user_id}_{class_name}_{start_time}_reminder"
+                        
+                        # Check if already sent (prevent duplicates)
+                        if notification_key in sent_notifications:
+                            last_sent = sent_notifications[notification_key]
+                            if (now - datetime.fromisoformat(last_sent)).total_seconds() < 3600:  # 1 hour cooldown
+                                continue
+                        
+                        # Send reminder notification
+                        await send_class_notification(
+                            user_id=user_id,
+                            fcm_token=fcm_token,
+                            title=f"📚 Upcoming Class: {class_name}",
+                            body=f"Your class starts in {int(time_diff)} minutes at {start_time} in {room}",
+                            data={
+                                "type": "class_reminder",
+                                "class_name": class_name,
+                                "start_time": start_time,
+                                "room": room
+                            }
+                        )
+                        
+                        sent_notifications[notification_key] = now.isoformat()
+                        notification_count += 1
+                        logger.info(f"✅ Sent reminder to {user_id} for {class_name}")
+                    
+                    # SCENARIO 2: Class just started (within 0-5 minutes)
+                    elif 0 <= time_diff <= 5:
+                        notification_key = f"{user_id}_{class_name}_{start_time}_start"
+                        
+                        if notification_key in sent_notifications:
+                            last_sent = sent_notifications[notification_key]
+                            if (now - datetime.fromisoformat(last_sent)).total_seconds() < 3600:
+                                continue
+                        
+                        # Send class start notification
+                        await send_class_notification(
+                            user_id=user_id,
+                            fcm_token=fcm_token,
+                            title=f"🔔 Class Started: {class_name}",
+                            body=f"Your class has started at {start_time} in {room}. Don't forget to mark attendance!",
+                            data={
+                                "type": "class_start",
+                                "class_name": class_name,
+                                "start_time": start_time,
+                                "room": room
+                            }
+                        )
+                        
+                        sent_notifications[notification_key] = now.isoformat()
+                        notification_count += 1
+                        logger.info(f"✅ Sent start notification to {user_id} for {class_name}")
+                
+                except Exception as e:
+                    logger.error(f"Error processing class {class_name}: {e}")
+                    continue
+        
+        if notification_count > 0:
+            logger.info(f"✅ Sent {notification_count} class notifications")
+        else:
+            logger.info("ℹ️ No class notifications to send at this time")
+            
+    except Exception as e:
+        logger.error(f"❌ Error in check_upcoming_classes: {e}")
+
+async def send_class_notification(user_id: str, fcm_token: str, title: str, body: str, data: Dict):
+    """Send FCM notification to user"""
+    try:
+        if FIREBASE_AVAILABLE:
+            message = messaging.Message(
+                notification=messaging.Notification(
+                    title=title,
+                    body=body
+                ),
+                data=data,
+                token=fcm_token,
+                android=messaging.AndroidConfig(
+                    priority='high',
+                    notification=messaging.AndroidNotification(
+                        sound='default',
+                        priority='high',
+                        default_vibrate_timings=True
+                    )
+                )
+            )
+            
+            response = messaging.send(message)
+            logger.info(f"✅ FCM sent: {response}")
+        else:
+            logger.info(f"🔔 [SIMULATED] Notification to {user_id}: {title}")
+        
+        # Log to notification history
+        notification_history.append({
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "title": title,
+            "body": body,
+            "data": data,
+            "sent_at": datetime.utcnow().isoformat(),
+            "status": "sent" if FIREBASE_AVAILABLE else "simulated"
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to send notification: {e}")
+
+# Initialize scheduler
+@app.on_event("startup")
+async def startup_scheduler():
+    """Start the class detection scheduler on app startup"""
+    try:
+        # Run check every 2 minutes
+        scheduler.add_job(
+            check_upcoming_classes,
+            trigger=IntervalTrigger(minutes=2),
+            id='class_detector',
+            name='Check for upcoming and ongoing classes',
+            replace_existing=True
+        )
+        scheduler.start()
+        logger.info("✅ Class detection scheduler started (runs every 2 minutes)")
+    except Exception as e:
+        logger.error(f"❌ Failed to start scheduler: {e}")
+
+@app.on_event("shutdown")
+async def shutdown_scheduler():
+    """Shutdown scheduler gracefully"""
+    if scheduler.running:
+        scheduler.shutdown()
+        logger.info("🛑 Scheduler shutdown complete")
 
 # ============================================
 # AI Face Engine (Local Processing)
@@ -345,28 +574,59 @@ async def register_push_token(data: PushTokenRequest):
 
 @api_router.post("/notifications/send")
 async def send_notification(data: SendNotificationRequest):
-    """Send push notification to user (mock - integrate with FCM in production)"""
+    """Send push notification to user via Firebase Cloud Messaging"""
     token = push_tokens.get(data.user_id)
     
+    notification_id = str(uuid.uuid4())
     notification = {
-        "id": str(uuid.uuid4()),
+        "id": notification_id,
         "user_id": data.user_id,
         "title": data.title,
         "body": data.body,
         "data": data.data or {},
         "sent_at": datetime.utcnow().isoformat(),
-        "token_exists": token is not None
+        "token_exists": token is not None,
+        "status": "pending"
     }
+    
+    # Send via Firebase if available and token exists
+    if token and FIREBASE_AVAILABLE:
+        try:
+            message = messaging.Message(
+                notification=messaging.Notification(
+                    title=data.title,
+                    body=data.body
+                ),
+                data=data.data or {},
+                token=token,
+                android=messaging.AndroidConfig(
+                    priority='high',
+                    notification=messaging.AndroidNotification(
+                        sound='default',
+                        priority='high'
+                    )
+                )
+            )
+            
+            response = messaging.send(message)
+            notification["status"] = "sent"
+            notification["firebase_response"] = response
+            logger.info(f"✅ Notification sent to {data.user_id}: {response}")
+        except Exception as e:
+            notification["status"] = "failed"
+            notification["error"] = str(e)
+            logger.error(f"❌ Failed to send notification: {e}")
+    else:
+        notification["status"] = "simulated"
+        logger.info(f"🔔 [SIMULATED] Notification: {data.title}")
     
     notification_history.append(notification)
     
-    # In production, send to FCM here:
-    # firebase_admin.messaging.send(Message(...))
-    
     return {
-        "success": True,
-        "notification_id": notification["id"],
-        "message": "Notification sent" if token else "Token not found - notification queued"
+        "success": notification["status"] in ["sent", "simulated"],
+        "notification_id": notification_id,
+        "status": notification["status"],
+        "message": f"Notification {notification['status']}" + ("" if token else " (no FCM token)")
     }
 
 @api_router.get("/notifications/history/{user_id}")
@@ -379,6 +639,35 @@ async def get_notification_history(user_id: str, limit: int = 20):
         "success": True,
         "count": len(user_notifications[:limit]),
         "notifications": user_notifications[:limit]
+    }
+
+@api_router.post("/notifications/test-scheduler")
+async def test_class_scheduler():
+    """Manually trigger class detection (for testing)"""
+    try:
+        await check_upcoming_classes()
+        return {
+            "success": True,
+            "message": "Class detection completed",
+            "sent_count": len([n for n in notification_history if 
+                             (datetime.utcnow() - datetime.fromisoformat(n["sent_at"])).seconds < 60])
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@api_router.get("/notifications/status")
+async def get_notification_system_status():
+    """Get notification system status and statistics"""
+    return {
+        "firebase_enabled": FIREBASE_AVAILABLE,
+        "scheduler_running": scheduler.running if scheduler else False,
+        "registered_tokens": len(push_tokens),
+        "total_notifications_sent": len(notification_history),
+        "notifications_last_hour": len([
+            n for n in notification_history 
+            if (datetime.utcnow() - datetime.fromisoformat(n["sent_at"])).seconds < 3600
+        ]),
+        "duplicate_prevention_cache_size": len(sent_notifications)
     }
 
 @api_router.post("/notifications/attendance-reminder")
@@ -734,7 +1023,12 @@ async def proxy_to_railway(request: Request, path: str):
 
 @app.on_event("shutdown")
 async def shutdown():
+    """Cleanup on shutdown"""
+    if scheduler and scheduler.running:
+        scheduler.shutdown()
+        logger.info("🛑 Scheduler shutdown complete")
     await http_client.aclose()
+    logger.info("🛑 Application shutdown complete")
 
 if __name__ == "__main__":
     import uvicorn
