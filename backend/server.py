@@ -340,9 +340,12 @@ async def startup_scheduler():
 @app.on_event("shutdown")
 async def shutdown_scheduler():
     """Shutdown scheduler gracefully"""
-    if scheduler.running:
-        scheduler.shutdown()
-        logger.info("🛑 Scheduler shutdown complete")
+    try:
+        if scheduler and scheduler.running:
+            scheduler.shutdown(wait=False)
+            logger.info("🛑 Scheduler shutdown complete")
+    except Exception as e:
+        logger.warning(f"Scheduler shutdown error (non-critical): {e}")
 
 # ============================================
 # AI Face Engine (Local Processing)
@@ -1024,10 +1027,19 @@ async def proxy_to_railway(request: Request, path: str):
 @app.on_event("shutdown")
 async def shutdown():
     """Cleanup on shutdown"""
-    if scheduler and scheduler.running:
-        scheduler.shutdown()
-        logger.info("🛑 Scheduler shutdown complete")
-    await http_client.aclose()
+    try:
+        if scheduler and scheduler.running:
+            scheduler.shutdown(wait=False)
+            logger.info("🛑 Scheduler shutdown complete")
+    except Exception as e:
+        logger.warning(f"Scheduler shutdown warning: {e}")
+    
+    try:
+        await http_client.aclose()
+        logger.info("🛑 HTTP client closed")
+    except Exception as e:
+        logger.warning(f"HTTP client close warning: {e}")
+    
     logger.info("🛑 Application shutdown complete")
 
 if __name__ == "__main__":
