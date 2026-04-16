@@ -7,64 +7,64 @@
 
 export const Colors = {
     // ── Backgrounds ──────────────────────────────
-    bg: '#0A0E1A',
-    bgCard: '#121729',
-    bgElevated: '#1A2035',
-    bgSheet: '#0D1220',
+    bg: '#1e1b4b', // Royal Purple
+    bgCard: '#2e2a7a',
+    bgElevated: '#3b369c',
+    bgSheet: '#18153d',
 
-    // ── Primary (Electric Indigo) ────────────────
-    primary: '#6C5CE7',
-    primaryLight: '#A29BFE',
-    primaryDark: '#4834D4',
-    primaryGlass: 'rgba(108, 92, 231, 0.12)',
+    // ── Primary (Electric Gold) ────────────────
+    primary: '#fbbf24', // Updated to Gold
+    primaryLight: '#fde68a',
+    primaryDark: '#d97706',
+    primaryGlass: 'rgba(251, 191, 36, 0.12)',
 
-    // ── Accent (Cyan) ────────────────────────────
-    accent: '#00D2FF',
-    accentGlass: 'rgba(0, 210, 255, 0.10)',
+    // ── Accent (Electric Gold / Amber) ──────────
+    accent: '#fbbf24',
+    accentGlass: 'rgba(251, 191, 36, 0.10)',
 
     // ── Semantic ─────────────────────────────────
-    success: '#00E676',
-    successGlass: 'rgba(0, 230, 118, 0.10)',
-    warning: '#FFB74D',
-    warningGlass: 'rgba(255, 183, 77, 0.10)',
-    danger: '#FF5252',
-    dangerGlass: 'rgba(255, 82, 82, 0.10)',
+    success: '#10b981',
+    successGlass: 'rgba(16, 185, 129, 0.10)',
+    warning: '#f59e0b',
+    warningGlass: 'rgba(245, 158, 11, 0.10)',
+    danger: '#ef4444',
+    dangerGlass: 'rgba(239, 68, 68, 0.10)',
 
     // ── Text ─────────────────────────────────────
     textPrimary: '#FFFFFF',
-    textSecondary: 'rgba(255, 255, 255, 0.70)',
-    textMuted: 'rgba(255, 255, 255, 0.40)',
-    textDisabled: 'rgba(255, 255, 255, 0.20)',
+    textSecondary: 'rgba(255, 255, 255, 0.85)',
+    textMuted: 'rgba(255, 255, 255, 0.50)',
+    textDisabled: 'rgba(255, 255, 255, 0.25)',
 
     // ── Surfaces ─────────────────────────────────
     glass: 'rgba(255, 255, 255, 0.06)',
     glassMedium: 'rgba(255, 255, 255, 0.10)',
     surfaceLight: 'rgba(255, 255, 255, 0.15)',
-    border: 'rgba(255, 255, 255, 0.10)',
-    borderLight: 'rgba(255, 255, 255, 0.06)',
-    divider: 'rgba(255, 255, 255, 0.08)',
+    border: 'rgba(255, 255, 255, 0.12)',
+    borderLight: 'rgba(255, 255, 255, 0.08)',
+    divider: 'rgba(255, 255, 255, 0.10)',
 
     // ── Gamification ─────────────────────────────
-    gold: '#FFD700',
-    silver: '#C0C0C0',
-    bronze: '#CD7F32',
-    streak: '#FF6B35',
+    gold: '#fbbf24',
+    silver: '#cbd5e1',
+    bronze: '#92400e',
+    streak: '#fbbf24',
 
     // ── Role Colors ──────────────────────────────
-    student: '#6C5CE7',
-    faculty: '#A29BFE',
-    admin: '#00D2FF',
+    student: '#fbbf24',
+    faculty: '#fde047',
+    admin: '#f59e0b',
 
     // ── Chart / Data Viz ─────────────────────────
-    chart: ['#6C5CE7', '#00D2FF', '#00E676', '#FFB74D', '#FF5252', '#A29BFE'],
+    chart: ['#fbbf24', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#6366f1'],
 
-    // ── Gradients (as arrays for LinearGradient) ─
-    gradientBg: ['#0A0E1A', '#151B30'],
-    gradientPrimary: ['#6C5CE7', '#4834D4'],
-    gradientAccent: ['#00D2FF', '#0099CC'],
-    gradientSuccess: ['#00E676', '#00C853'],
-    gradientDanger: ['#FF5252', '#D32F2F'],
-    gradientCard: ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.02)'],
+    // ── Gradients ────────────────────────────────
+    gradientBg: ['#1e1b4b', '#2e2a7a'],
+    gradientPrimary: ['#fbbf24', '#f59e0b'],
+    gradientAccent: ['#fbbf24', '#fde68a'],
+    gradientSuccess: ['#10b981', '#059669'],
+    gradientDanger: ['#ef4444', '#dc2626'],
+    gradientCard: ['rgba(255,255,255,0.08)', 'rgba(46,42,122,0.4)'],
 };
 
 export default Colors;

@@ -28,21 +28,9 @@ import AttendanceAnalyticsScreen from './src/screens/AttendanceAnalyticsScreen';
 import AcademicCalendarScreen from './src/screens/AcademicCalendarScreen';
 import VersionChecker from './src/components/VersionChecker';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import { Colors as ThemeColors } from './src/theme/colors';
 
-const colors = {
-  bg0: '#0f172a',
-  bg1: '#1e293b',
-  surf: 'rgba(255, 255, 255, 0.05)',
-  surf2: 'rgba(255, 255, 255, 0.08)',
-  hot: '#3b82f6',
-  purp: '#6366f1',
-  oran: '#f59e0b',
-  acid: '#84cc16',
-  green: '#10b981',
-  danger: '#ef4444',
-  cyan: '#0ea5e9',
-  border: 'rgba(255, 255, 255, 0.1)',
-};
+const colors = ThemeColors;
 
 const Stack = createNativeStackNavigator();
 
@@ -134,7 +122,7 @@ export default function App() {
       <ErrorBoundary>
         <NavigationContainer theme={MyTheme}>
           <VersionChecker />
-          <StatusBar barStyle="light-content" backgroundColor={colors.bg0} />
+          <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
           <Stack.Navigator 
             initialRouteName={userToken ? "Main" : "RoleSelection"} 
             screenOptions={{ 
@@ -142,7 +130,7 @@ export default function App() {
               animation: 'fade_from_bottom',
               animationDuration: 350,
               gestureEnabled: true,
-              contentStyle: { backgroundColor: colors.bg0 }
+              contentStyle: { backgroundColor: colors.bg }
             }}
           >
             {userToken ? (

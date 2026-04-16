@@ -28,6 +28,7 @@ import { getUniqueDeviceId } from '../utils/device';
 import { fetchWithTimeout } from '../utils/api';
 import AstraTouchable from '../components/AstraTouchable';
 import { getFCMToken } from '../hooks/useNotifications';
+import Colors from '../theme/colors';
 
 const { width, height } = Dimensions.get('window');
 
@@ -35,17 +36,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const colors = {
-    bg: '#1e1b4b', // Deep Royal Blue-Purple
-    glass: 'rgba(255, 255, 255, 0.03)',
-    border: 'rgba(255, 255, 255, 0.08)',
-    textDim: 'rgba(255, 255, 255, 0.4)',
-    student: '#fbbf24', // Electric Gold
-    faculty: '#bf00ff',
-    admin: '#ff0055',
-    neonGreen: '#fbbf24', // Unified with Gold theme
-    hot: '#ff3d71'
-};
+const colors = Colors;
 
 export default function AuthScreen({ route, navigation }) {
     const { role } = route.params || { role: 'student' };
@@ -322,7 +313,7 @@ export default function AuthScreen({ route, navigation }) {
             </TouchableOpacity>
             
             <View style={styles.authLogoBox}>
-                <Image source={require('../../assets/logo.png')} style={styles.authLogo} />
+                <Image source={require('../../assets/star_logo.png')} style={styles.authLogo} />
                 <Text style={styles.instName}>{tenant?.institution_name || 'ASTRA'}</Text>
                 <Text style={styles.authSub}>Secure Login</Text>
             </View>
