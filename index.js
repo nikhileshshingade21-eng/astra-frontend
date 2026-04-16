@@ -18,7 +18,7 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
     title: title || "ASTRA System Alert",
     body: body || "You have a new background event.",
     android: {
-      channelId: 'astra-high-priority',
+      channelId: 'astra-class-reminders',
       importance: AndroidImportance.HIGH,
       pressAction: {
         id: 'default',

@@ -18,6 +18,7 @@ import LinearGradient from 'react-native-linear-gradient';
 // import { BlurView } from '@react-native-community/blur';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import * as SecureStore from '../utils/storage';
+import { API_BASE } from '../api/config';
 import { fetchWithTimeout } from '../utils/api';
 
 const { width } = Dimensions.get('window');
@@ -62,7 +63,7 @@ export default function TrackerScreen({ route, navigation }) {
                     roll: res.data.user?.roll_number || 'N/A',
                     attendance: res.data.attendance_pct || 0
                 });
-                setTrailData(res.data.trail || []);
+                setTrailData(Array.isArray(res.data.trail) ? res.data.trail : (res.data.trail || []));
             } else if (!silent) {
                 Alert.alert('Not Found', res.data?.error || 'Student not found.');
                 setSelectedStudent(null);

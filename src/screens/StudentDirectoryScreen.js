@@ -66,7 +66,8 @@ const StudentDirectoryScreen = ({ navigation }) => {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok && res.data) {
-                    const dbUsers = (res.data.users || []).filter(u => u.role === 'student').map(u => ({
+                    const userList = Array.isArray(res.data) ? res.data : (res.data.users || []);
+                    const dbUsers = userList.filter(u => u.role === 'student').map(u => ({
                         id: u.roll_number?.toUpperCase() || `U${u.id}`,
                         name: u.name,
                         branch: u.programme?.split(' ')[0] || 'Unknown',

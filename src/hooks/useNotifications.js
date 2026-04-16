@@ -50,7 +50,7 @@ export function useNotifications(userId) {
 
                 // 5. Create High Priority Channel for Notifee
                 await notifee.createChannel({
-                    id: 'astra-high-priority',
+                    id: 'astra-class-reminders',
                     name: 'ASTRA System Alerts',
                     importance: AndroidImportance.HIGH,
                 });
@@ -65,7 +65,7 @@ export function useNotifications(userId) {
                             title,
                             body,
                             android: {
-                                channelId: 'astra-high-priority',
+                                channelId: 'astra-class-reminders',
                                 importance: AndroidImportance.HIGH,
                             },
                         });

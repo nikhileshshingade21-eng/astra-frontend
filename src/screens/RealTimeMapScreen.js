@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -138,7 +138,8 @@ const RealTimeMapScreen = ({ navigation }) => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok && res.data) {
-                setRealtimeData(res.data.data || []);
+                // standardized unwrap: res.data is already the array from fetchWithTimeout
+                setRealtimeData(Array.isArray(res.data) ? res.data : (res.data.data || []));
             }
         } catch (e) {
             console.warn('[Map] Manual refresh failed:', e.message);
@@ -158,7 +159,7 @@ const RealTimeMapScreen = ({ navigation }) => {
                     <Text style={styles.title}>Live Map</Text>
                     <Text style={styles.sub}>REAL-TIME CAMPUS VIEW</Text>
                 </View>
-                <TouchableOpacity onPress={fetchRealtime} style={styles.refreshBtn}>
+                <TouchableOpacity onPress={triggerRefresh} style={styles.refreshBtn}>
                     <Ionicons name="scan" size={20} color={colors.perfect} />
                 </TouchableOpacity>
             </View>

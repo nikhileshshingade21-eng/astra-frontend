@@ -68,7 +68,8 @@ export default function ZoneManagementScreen({ navigation }) {
             });
             if (res.ok && res.data) {
                 LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                setZones((res.data.zones || []).map(z => ({
+                const zoneList = Array.isArray(res.data) ? res.data : (res.data.zones || []);
+                setZones(zoneList.map(z => ({
                     id: z.id,
                     name: z.name,
                     lat: String(z.lat),
