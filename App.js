@@ -112,7 +112,7 @@ export default function App() {
     ...DefaultTheme,
     colors: {
       ...DefaultTheme.colors,
-      background: colors.bg0,
+      background: colors.bg,
       text: '#ffffff',
     },
   };
@@ -187,13 +187,13 @@ export default function App() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: colors.bg0,
+    backgroundColor: ThemeColors.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   container: {
     flex: 1,
-    backgroundColor: colors.bg0,
+    backgroundColor: ThemeColors.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: 'Satoshi-Bold',
     fontSize: 12,
-    color: colors.hot,
+    color: ThemeColors.primary,
     marginTop: 8,
     letterSpacing: 2,
   }
