@@ -33,6 +33,8 @@ import Animated, {
     interpolate
 } from 'react-native-reanimated';
 import { fetchWithTimeout } from '../utils/api';
+import Colors from '../theme/colors';
+import AstraTouchable from '../components/AstraTouchable';
 
 const { width, height } = Dimensions.get('window');
 
@@ -40,18 +42,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const colors = {
-    bg: '#020617',
-    glass: 'rgba(255, 255, 255, 0.03)',
-    border: 'rgba(255, 255, 255, 0.08)',
-    textDim: 'rgba(255, 255, 255, 0.4)',
-    neonBlue: '#00f2ff',
-    neonGreen: '#00ffaa',
-    neonPink: '#ff00e5',
-    neonPurple: '#bf00ff',
-    hot: '#ff3d71',
-    particle: 'rgba(0, 242, 255, 0.2)'
-};
+const colors = Colors;
 
 const DecodingText = ({ text, style, delay = 0 }) => {
     const [display, setDisplay] = useState('');
@@ -229,7 +220,7 @@ export default function AnnouncementsScreen() {
         const theme = getCatColors(item.category);
         return (
             <Animated.View entering={FadeInDown.delay(index * 100)}>
-                <TouchableOpacity activeOpacity={0.9} onPress={() => {
+                <AstraTouchable activeOpacity={0.9} onPress={() => {
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setSelectedItem(item);
                 }}>
@@ -283,8 +274,8 @@ export default function AnnouncementsScreen() {
         const isRead = item.is_read === 1;
         return (
             <Animated.View entering={FadeInRight.delay(index * 50)}>
-                <TouchableOpacity onPress={() => markRead(item.id)} activeOpacity={0.8}>
-                    <View blurType="dark" blurAmount={3} style={[styles.activityCard, !isRead && { borderColor: colors.neonBlue + '40', backgroundColor: colors.neonBlue + '05' }]}>
+                <AstraTouchable onPress={() => markRead(item.id)} activeOpacity={0.8}>
+                    <View style={[styles.activityCard, !isRead && { borderColor: colors.primary + '40', backgroundColor: colors.primary + '05' }]}>
                         <View style={styles.activityHeader}>
                             <View style={styles.activityIdentity}>
                                 <View style={[styles.activityDot, { backgroundColor: item.type === 'success' ? colors.neonGreen : (item.type === 'warning' ? colors.hot : colors.neonBlue) }]} />
@@ -300,8 +291,9 @@ export default function AnnouncementsScreen() {
                                 <LinearGradient colors={[colors.neonBlue + '00', colors.neonBlue + '10']} start={{x:0,y:0}} end={{x:1,y:0}} style={StyleSheet.absoluteFill} />
                             </View>
                         )}
+                        <View style={[styles.bracket, styles.br]} />
                     </View>
-                </TouchableOpacity>
+                </AstraTouchable>
             </Animated.View>
         );
     };
@@ -334,11 +326,11 @@ export default function AnnouncementsScreen() {
                     <DecodingText text="Announcements" style={styles.headerTitle} />
                 </View>
                 {(userRole === 'faculty' || userRole === 'admin') && (
-                    <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
-                        <LinearGradient colors={[colors.neonBlue, colors.neonPurple]} style={styles.addBtnGrad}>
+                    <AstraTouchable style={styles.addBtn} onPress={() => setModalVisible(true)}>
+                        <LinearGradient colors={colors.gradientPrimary} style={styles.addBtnGrad}>
                             <Ionicons name="flash-outline" size={24} color="#000" />
                         </LinearGradient>
-                    </TouchableOpacity>
+                    </AstraTouchable>
                 )}
             </View>
 

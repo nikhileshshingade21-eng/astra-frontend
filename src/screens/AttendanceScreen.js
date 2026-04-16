@@ -37,6 +37,8 @@ import Animated, {
 import { API_BASE } from '../api/config';
 import { fetchWithTimeout } from '../utils/api';
 import { getUniqueDeviceId } from '../utils/device';
+import Colors from '../theme/colors';
+import AstraTouchable from '../components/AstraTouchable';
 
 const { width, height } = Dimensions.get('window');
 
@@ -44,17 +46,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const colors = {
-    bg: '#020617',
-    glass: 'rgba(255, 255, 255, 0.03)',
-    border: 'rgba(255, 255, 255, 0.08)',
-    textDim: 'rgba(255, 255, 255, 0.4)',
-    neonBlue: '#00f2ff',
-    neonGreen: '#00ffaa',
-    neonPink: '#ff00e5',
-    neonPurple: '#bf00ff',
-    hot: '#ff3d71'
-};
+const colors = Colors;
 
 export default function AttendanceScreen({ route, navigation }) {
     const { user, classId: paramClassId } = route.params || { user: {} };
@@ -318,9 +310,9 @@ export default function AttendanceScreen({ route, navigation }) {
             <LinearGradient colors={['#020617', '#0f172a']} style={StyleSheet.absoluteFill} />
 
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                <AstraTouchable onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Ionicons name="chevron-back" size={24} color="#fff" />
-                </TouchableOpacity>
+                </AstraTouchable>
                 <View>
                     <Text style={styles.title}>Mark Attendance</Text>
                     <Text style={styles.sub}>Fingerprint, GPS & QR Verification</Text>
@@ -335,12 +327,12 @@ export default function AttendanceScreen({ route, navigation }) {
             <View style={styles.classSection}>
                 <View style={[styles.headerRow, { paddingHorizontal: 24, marginBottom: 15 }]}>
                     <Text style={styles.secLabel}>TODAY'S CLASSES</Text>
-                    <TouchableOpacity style={styles.scanTrigger} onPress={openScanner}>
-                        <LinearGradient colors={[colors.neonBlue, colors.neonPurple]} style={styles.scanTriggerGrad}>
+                    <AstraTouchable style={styles.scanTrigger} onPress={openScanner}>
+                        <LinearGradient colors={colors.gradientPrimary} style={styles.scanTriggerGrad}>
                             <Ionicons name="qr-code-outline" size={16} color="#000" />
                             <Text style={styles.scanTriggerText}>SCAN QR</Text>
                         </LinearGradient>
-                    </TouchableOpacity>
+                    </AstraTouchable>
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.classScroll}>
                     <TouchableOpacity
@@ -392,21 +384,20 @@ export default function AttendanceScreen({ route, navigation }) {
                         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                             <Animated.View style={[styles.glowRing, pulseStyle, { borderColor: loading ? colors.neonBlue : colors.neonGreen }]} />
                             
-                            <TouchableOpacity
+                            <AstraTouchable
                                 style={[styles.verifyBtn, (loading || gpsStatus !== 'found') && styles.verifyBtnOff]}
                                 onPress={runBiometric}
                                 disabled={loading || gpsStatus !== 'found'}
-                                activeOpacity={0.8}
                             >
-                                <View blurType="dark" blurAmount={10} style={styles.btnGlass}>
+                                <View style={styles.btnGlass}>
                                     {loading ? (
-                                        <ActivityIndicator size="large" color={colors.neonBlue} />
+                                        <ActivityIndicator size="large" color={colors.primary} />
                                     ) : (
-                                        <Ionicons name="finger-print" size={80} color={gpsStatus === 'found' ? colors.neonGreen : colors.textDim} />
+                                        <Ionicons name="finger-print" size={80} color={gpsStatus === 'found' ? colors.success : colors.textMuted} />
                                     )}
-                                    <Animated.View style={[styles.scanLine, scannerStyle, { backgroundColor: colors.neonBlue }]} />
+                                    <Animated.View style={[styles.scanLine, scannerStyle, { backgroundColor: colors.primary }]} />
                                 </View>
-                            </TouchableOpacity>
+                            </AstraTouchable>
                         </View>
                         <Text style={styles.hintText}>{loading ? 'Verifying...' : 'Tap to mark attendance'}</Text>
                         

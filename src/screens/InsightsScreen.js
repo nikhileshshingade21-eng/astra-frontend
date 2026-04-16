@@ -24,6 +24,8 @@ import Animated, {
     FadeInRight 
 } from 'react-native-reanimated';
 import { fetchWithTimeout } from '../utils/api';
+import Colors from '../theme/colors';
+import AstraTouchable from '../components/AstraTouchable';
 
 const { width } = Dimensions.get('window');
 
@@ -31,17 +33,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const colors = {
-    bg: '#020617',
-    glass: 'rgba(255, 255, 255, 0.03)',
-    border: 'rgba(255, 255, 255, 0.08)',
-    textDim: 'rgba(255, 255, 255, 0.4)',
-    neonBlue: '#00f2ff',
-    neonGreen: '#00ffaa',
-    neonPink: '#ff00e5',
-    neonPurple: '#bf00ff',
-    hot: '#ff3d71'
-};
+const colors = Colors;
 
 export default function InsightsScreen({ route, navigation }) {
     const { user } = route.params || { user: { name: 'Student' } };
@@ -83,9 +75,9 @@ export default function InsightsScreen({ route, navigation }) {
             <LinearGradient colors={['#020617', '#0f172a']} style={StyleSheet.absoluteFill} />
 
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                <AstraTouchable onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Ionicons name="chevron-back" size={24} color="#fff" />
-                </TouchableOpacity>
+                </AstraTouchable>
                 <View>
                     <Text style={styles.title}>AI Insights</Text>
                     <Text style={styles.sub}>Smart performance analysis</Text>
@@ -116,7 +108,7 @@ export default function InsightsScreen({ route, navigation }) {
                                 </View>
                             </View>
                             <View style={styles.track}>
-                                <LinearGradient colors={[colors.neonBlue, colors.neonPurple]} style={[styles.fill, { width: `${aiData.prediction?.predicted_marks}%` }]} />
+                                <LinearGradient colors={colors.gradientPrimary} style={[styles.fill, { width: `${aiData.prediction?.predicted_marks}%` }]} />
                             </View>
                         </View>
 

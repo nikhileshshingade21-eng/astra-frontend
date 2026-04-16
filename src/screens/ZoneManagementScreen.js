@@ -28,6 +28,8 @@ import Animated, {
     interpolate
 } from 'react-native-reanimated';
 import { fetchWithTimeout } from '../utils/api';
+import Colors from '../theme/colors';
+import AstraTouchable from '../components/AstraTouchable';
 
 const { width } = Dimensions.get('window');
 
@@ -35,17 +37,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const colors = {
-    bg: '#020617',
-    glass: 'rgba(255, 255, 255, 0.03)',
-    border: 'rgba(255, 255, 255, 0.08)',
-    textDim: 'rgba(255, 255, 255, 0.4)',
-    neonBlue: '#00f2ff',
-    neonGreen: '#00ffaa',
-    neonPink: '#ff00e5',
-    neonPurple: '#bf00ff',
-    hot: '#ff3d71'
-};
+const colors = Colors;
 
 export default function ZoneManagementScreen({ navigation }) {
     const [zones, setZones] = useState([]);
@@ -216,9 +208,9 @@ export default function ZoneManagementScreen({ navigation }) {
             </View>
 
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                <AstraTouchable onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Ionicons name="chevron-back" size={24} color="#fff" />
-                </TouchableOpacity>
+                </AstraTouchable>
                 <View>
                     <Text style={styles.title}>Campus Zones</Text>
                     <Text style={styles.sub}>Manage location areas</Text>

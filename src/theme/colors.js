@@ -65,6 +65,14 @@ export const Colors = {
     gradientSuccess: ['#10b981', '#059669'],
     gradientDanger: ['#ef4444', '#dc2626'],
     gradientCard: ['rgba(255,255,255,0.08)', 'rgba(46,42,122,0.4)'],
+
+    // ── Legacy Aliases (Safety Net) ──────────────
+    neonBlue: '#fbbf24', // Maps to Gold now
+    neonGreen: '#10b981',
+    neonPurple: '#d97706',
+    neonPink: '#ef4444',
+    hot: '#ef4444',
+    bg0: '#1e1b4b',
 };
 
 export default Colors;
