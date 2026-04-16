@@ -34,6 +34,7 @@ import Animated, {
 import { Colors } from '../theme/colors';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import { useNotifications } from '../hooks/useNotifications';
+import AstraTouchable from '../components/AstraTouchable';
 
 const { width } = Dimensions.get('window');
 
@@ -277,7 +278,7 @@ export default function DashboardScreen({ route, navigation }) {
                 {todayClasses.length > 0 ? (
                     todayClasses.map((cls, i) => (
                         <Animated.View key={cls.id || i} entering={FadeInRight.delay(i * 80)}>
-                            <TouchableOpacity
+                            <AstraTouchable
                                 style={[
                                     styles.classCard,
                                     cls.live_status === 'live' && { borderColor: Colors.primary + '60', backgroundColor: Colors.primaryGlass }
@@ -287,7 +288,6 @@ export default function DashboardScreen({ route, navigation }) {
                                         navigation.navigate('Attendance', { user, classId: cls.id });
                                     }
                                 }}
-                                activeOpacity={0.7}
                             >
                                 {/* Time Column */}
                                 <View style={styles.timeColumn}>
@@ -369,12 +369,12 @@ export default function DashboardScreen({ route, navigation }) {
                     <Text style={styles.sectionTitle}>Quick Actions</Text>
                 </View>
                 <View style={styles.actionsGrid}>
-                    <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Attendance', { user })}>
-                        <LinearGradient colors={['rgba(108,92,231,0.15)', 'rgba(108,92,231,0.05)']} style={styles.actionGradient}>
-                            <Ionicons name="finger-print-outline" size={26} color={Colors.primary} />
+                    <AstraTouchable style={styles.actionCard} onPress={() => navigation.navigate('Attendance', { user })}>
+                        <LinearGradient colors={['rgba(251, 191, 36, 0.15)', 'rgba(251, 191, 36, 0.05)']} style={styles.actionGradient}>
+                            <Ionicons name="finger-print-outline" size={26} color={Colors.student} />
                             <Text style={styles.actionLabel}>Mark{'\n'}Attendance</Text>
                         </LinearGradient>
-                    </TouchableOpacity>
+                    </AstraTouchable>
                     <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('AIChatbot', { user })}>
                         <LinearGradient colors={['rgba(0,210,255,0.15)', 'rgba(0,210,255,0.05)']} style={styles.actionGradient}>
                             <Ionicons name="sparkles-outline" size={26} color={Colors.accent} />
@@ -561,6 +561,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: Colors.border,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4
     },
     statValue: { fontFamily: 'Tanker', fontSize: 24, color: '#fff' },
     statLabel: { fontFamily: 'Satoshi-Bold', fontSize: 10, color: Colors.textMuted, marginTop: 4, letterSpacing: 0.3 },

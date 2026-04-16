@@ -26,6 +26,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getTenantConfig } from '../api/config';
 import { getUniqueDeviceId } from '../utils/device';
 import { fetchWithTimeout } from '../utils/api';
+import AstraTouchable from '../components/AstraTouchable';
 import { getFCMToken } from '../hooks/useNotifications';
 
 const { width, height } = Dimensions.get('window');
@@ -414,11 +415,11 @@ export default function AuthScreen({ route, navigation }) {
                     </View>
                 )}
 
-                <TouchableOpacity style={styles.submitAction} onPress={handleInitialAuth} disabled={loading}>
+                <AstraTouchable style={styles.submitAction} onPress={handleInitialAuth} disabled={loading}>
                     <LinearGradient colors={[roleColor, '#000']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.submitGradient}>
                         {loading ? <AstraLottie type="loading" size={60} /> : <Text style={styles.submitText}>CONTINUE</Text>}
                     </LinearGradient>
-                </TouchableOpacity>
+                </AstraTouchable>
 
                 {tab === 'login' && (
                     <TouchableOpacity style={styles.ssoAction} onPress={() => Alert.alert('College SSO', 'College SSO integration is coming soon. Please use your Roll Number and Password to log in.')}>
@@ -580,7 +581,20 @@ const styles = StyleSheet.create({
     stepDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.1)' },
     stepLine: { width: 20, height: 1, backgroundColor: 'rgba(255,255,255,0.1)' },
     
-    formGlass: { width: '100%', padding: 24, borderRadius: 32, borderWidth: 1, borderColor: colors.border, backgroundColor: 'rgba(15, 23, 42, 0.8)', overflow: 'hidden' },
+    formGlass: { 
+        width: '100%', 
+        padding: 24, 
+        borderRadius: 16, // Modern 16px
+        borderWidth: 1, 
+        borderColor: colors.border, 
+        backgroundColor: 'rgba(15, 23, 42, 0.8)', 
+        overflow: 'hidden',
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8
+    },
     tabRow: { flexDirection: 'row', gap: 12, marginBottom: 25 },
     tab: { flex: 1, paddingVertical: 14, alignItems: 'center', borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.03)' },
     activeTab: { backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },

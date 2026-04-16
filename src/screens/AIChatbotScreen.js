@@ -26,6 +26,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { fetchWithTimeout } from '../utils/api';
 import Colors from '../theme/colors';
+import TypingIndicator from '../components/TypingIndicator';
 
 const { width } = Dimensions.get('window');
 
@@ -204,7 +205,7 @@ export default function AIChatbotScreen({ route, navigation }) {
                 {messages.map((msg, index) => (
                     <Animated.View 
                         key={msg.id} 
-                        entering={FadeInDown.springify()}
+                        entering={FadeInDown.springify().damping(15).stiffness(150)}
                         style={[
                             styles.messageWrapper,
                             msg.isBot ? styles.messageWrapperBot : styles.messageWrapperUser
@@ -217,7 +218,8 @@ export default function AIChatbotScreen({ route, navigation }) {
                         )}
                         <View style={[
                             styles.messageBubble,
-                            msg.isBot ? styles.messageBot : styles.messageUser
+                            msg.isBot ? styles.messageBot : styles.messageUser,
+                            { borderRadius: 16 } // Explicitly 16px as requested
                         ]}>
                             <Text style={styles.messageText}>{msg.text}</Text>
                         </View>
@@ -227,9 +229,14 @@ export default function AIChatbotScreen({ route, navigation }) {
                 {renderSuggestions()}
 
                 {isTyping && (
-                    <View style={styles.typingIndicator}>
-                        <ActivityIndicator size="small" color={Colors.primary} />
-                        <Text style={styles.typingText}>{aiStatus || 'Thinking...'}</Text>
+                    <View style={styles.typingWrapper}>
+                        <View style={styles.botAvatarSmall}>
+                            <Ionicons name="sparkles" size={10} color="#fff" />
+                        </View>
+                        <View style={styles.typingIndicator}>
+                            <TypingIndicator />
+                            <Text style={styles.typingText}>{aiStatus || 'Thinking...'}</Text>
+                        </View>
                     </View>
                 )}
             </ScrollView>
@@ -296,8 +303,26 @@ const styles = StyleSheet.create({
     chip: { backgroundColor: Colors.primaryGlass, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: Colors.primary + '50' },
     chipText: { fontFamily: 'Satoshi-Bold', fontSize: 13, color: Colors.primaryLight },
 
-    typingIndicator: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', padding: 12, backgroundColor: Colors.bgCard, borderRadius: 16, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.border },
-    typingText: { fontFamily: 'Satoshi-Medium', fontSize: 12, color: Colors.textMuted },
+    typingWrapper: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 20 },
+    botAvatarSmall: { width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 6, marginBottom: 4 },
+    typingIndicator: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        gap: 4, 
+        alignSelf: 'flex-start', 
+        paddingRight: 15, 
+        backgroundColor: Colors.bgCard, 
+        borderRadius: 16, 
+        borderBottomLeftRadius: 4, 
+        borderWidth: 1, 
+        borderColor: Colors.border,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4
+    },
+    typingText: { fontFamily: 'Satoshi-Bold', fontSize: 11, color: Colors.textMuted, marginLeft: -4 },
 
     inputArea: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 20, paddingVertical: 15, paddingBottom: Platform.OS === 'ios' ? 30 : 20, backgroundColor: Colors.bgCard, borderTopWidth: 1, borderTopColor: Colors.border },
     attachBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },

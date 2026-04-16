@@ -139,9 +139,10 @@ export default function App() {
             initialRouteName={userToken ? "Main" : "RoleSelection"} 
             screenOptions={{ 
               headerShown: false,
-              animation: 'slide_from_right',
-              animationDuration: 200,
-              gestureEnabled: true
+              animation: 'fade_from_bottom',
+              animationDuration: 350,
+              gestureEnabled: true,
+              contentStyle: { backgroundColor: colors.bg0 }
             }}
           >
             {userToken ? (
