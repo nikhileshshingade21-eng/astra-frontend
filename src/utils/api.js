@@ -40,7 +40,17 @@ export const fetchWithTimeout = async (endpoint, options = {}) => {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
             try {
-                data = await response.json();
+                const parsed = await response.json();
+                // Contract System: Auto-unwrap global standardized payloads
+                if (parsed && typeof parsed === 'object' && 'success' in parsed && 'data' in parsed && Object.keys(parsed).length <= 3) {
+                    data = parsed.data !== null ? parsed.data : parsed;
+                    response.apiMessage = parsed.message;
+                    response.apiSuccess = parsed.success;
+                    // Provide a raw reference just in case
+                    response.rawContract = parsed; 
+                } else {
+                    data = parsed;
+                }
             } catch (jsonErr) {
                 console.warn('[API] Failed to parse JSON response');
             }

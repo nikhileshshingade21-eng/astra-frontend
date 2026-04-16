@@ -80,33 +80,70 @@ const RealTimeMapScreen = ({ navigation }) => {
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [realtimeData, setRealtimeData] = useState([]);
 
-    const mapStudents = useMemo(() => {
-        return STUDENTS.map((s, index) => ({
-            ...s,
-            x: 24 + (parseInt(s.id.slice(-2)) * 3.5) % (MAP_SIZE - 48),
-            y: 24 + (parseInt(s.id.slice(-4, -2)) * 6.5) % (MAP_SIZE - 48),
-        }));
+    // 🎨 COORDINATE MAPPING: Translate real-time roll numbers to grid positions
+    const mapCoordinates = useCallback((data) => {
+        return data.map(s => {
+            const roll = s.roll_number || '';
+            const seedX = roll.length > 2 ? parseInt(roll.slice(-2)) : 10;
+            const seedY = roll.length > 4 ? parseInt(roll.slice(-4, -2)) : 10;
+            
+            return {
+                ...s,
+                id: s.roll_number,
+                x: 24 + (seedX * 15) % (MAP_SIZE - 48),
+                y: 24 + (seedY * 25) % (MAP_SIZE - 48),
+            };
+        });
     }, []);
 
-    const fetchRealtime = async () => {
+    const mappedStudents = useMemo(() => mapCoordinates(realtimeData), [realtimeData, mapCoordinates]);
+
+    useEffect(() => {
+        const io = require('socket.io-client');
+        const socket = io(API_BASE.replace('/api', ''), {
+            transports: ['websocket'],
+            reconnection: true
+        });
+
+        console.log('[SOCKET] Initializing Real-time Map Stream...');
+
+        socket.on('connect', () => {
+            console.log('[SOCKET] Linked to ASTRA_CORE_STREAM');
+        });
+
+        socket.on('LOCATION_UPDATE', (payload) => {
+            if (payload.success && payload.data) {
+                const student = payload.data;
+                setRealtimeData(prev => {
+                    const exists = prev.find(s => s.roll_number === student.roll_number);
+                    if (exists) {
+                        return prev.map(s => s.roll_number === student.roll_number ? { ...s, ...student } : s);
+                    }
+                    return [...prev, student];
+                });
+            }
+        });
+
+        return () => {
+            console.log('[SOCKET] Severing Map Stream');
+            socket.disconnect();
+        };
+    }, []);
+
+    const triggerRefresh = async () => {
+        // Fallback fetch if socket is lagging
         try {
             const token = await SecureStore.getItemAsync('token');
             const res = await fetchWithTimeout(`/api/admin/realtime-attendance`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok && res.data) {
-                setRealtimeData(res.data);
+                setRealtimeData(res.data.data || []);
             }
         } catch (e) {
-            console.warn('[Map] Realtime fetch error:', e.message);
+            console.warn('[Map] Manual refresh failed:', e.message);
         }
     };
-
-    useEffect(() => {
-        fetchRealtime();
-        const itv = setInterval(fetchRealtime, 15000);
-        return () => clearInterval(itv);
-    }, []);
 
     return (
         <View style={styles.container}>
@@ -128,16 +165,20 @@ const RealTimeMapScreen = ({ navigation }) => {
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.statsStrip}>
-                    <View blurType="dark" blurAmount={3} style={styles.statChip}>
-                        <Text style={styles.chipVal}>{STUDENTS.length}</Text>
-                        <Text style={styles.chipLab}>TOTAL</Text>
+                    <View style={styles.statChip}>
+                        <Text style={styles.chipVal}>{realtimeData.length}</Text>
+                        <Text style={styles.chipLab}>DETECTED</Text>
                     </View>
-                    <View blurType="dark" blurAmount={3} style={styles.statChip}>
-                        <Text style={[styles.chipVal, { color: colors.present }]}>34</Text>
-                        <Text style={styles.chipLab}>IN CAMPUS</Text>
+                    <View style={styles.statChip}>
+                        <Text style={[styles.chipVal, { color: colors.present }]}>
+                            {realtimeData.filter(s => s.status === 'present' || s.status === 'online').length}
+                        </Text>
+                        <Text style={styles.chipLab}>ACTIVE</Text>
                     </View>
-                    <View blurType="dark" blurAmount={3} style={styles.statChip}>
-                        <Text style={[styles.chipVal, { color: colors.atRisk }]}>02</Text>
+                    <View style={styles.statChip}>
+                        <Text style={[styles.chipVal, { color: colors.atRisk }]}>
+                            {realtimeData.filter(s => s.status === 'flagged').length}
+                        </Text>
                         <Text style={styles.chipLab}>FLAGGED</Text>
                     </View>
                 </View>
@@ -163,7 +204,7 @@ const RealTimeMapScreen = ({ navigation }) => {
                         </View>
 
                         {/* STUDENT NODES */}
-                        {mapStudents.map((s) => (
+                        {mappedStudents.map((s) => (
                             <PulsingDot 
                                 key={s.id} 
                                 student={s} 

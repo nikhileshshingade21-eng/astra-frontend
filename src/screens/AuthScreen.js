@@ -186,11 +186,14 @@ export default function AuthScreen({ route, navigation }) {
                 await SecureStore.setItemAsync('user', JSON.stringify(res.data.user));
                 navigation.replace('Main', { user: res.data.user });
             } else {
-                if (res.data?.error === 'ACCOUNT_NOT_REGISTERED') {
-                    Alert.alert('Not Registered', res.data.message);
+                // Contract: error codes are in rawContract.message after standardization
+                const errorCode = res.rawContract?.message || res.data?.error || '';
+                const errorDetail = res.data?.message || res.rawContract?.message || 'Invalid credentials';
+                if (errorCode === 'ACCOUNT_NOT_REGISTERED') {
+                    Alert.alert('Not Registered', res.data?.message || 'Account not registered. Please complete registration first.');
                     setTab('register');
                 } else {
-                    Alert.alert(tab === 'register' ? 'Registration Failed' : 'Login Failed', res.data?.message || res.data?.error || 'Invalid credentials');
+                    Alert.alert(tab === 'register' ? 'Registration Failed' : 'Login Failed', errorDetail);
                 }
                 setStep(1);
             }
@@ -217,7 +220,8 @@ export default function AuthScreen({ route, navigation }) {
                 setRecoveryStep(1);
                 setStep(5); // Recovery Screen
             } else {
-                setFormError(res.data?.error || 'Could not start password reset');
+                const errMsg = res.rawContract?.message || res.data?.message || res.data?.error || 'Could not start password reset';
+                setFormError(errMsg);
             }
         } catch (e) {
             setFormError('No internet connection');
@@ -244,7 +248,8 @@ export default function AuthScreen({ route, navigation }) {
                 setPassword(newPass);
                 finishAuth();
             } else {
-                Alert.alert('Error', res.data?.error || 'Reset failed');
+                const errMsg = res.rawContract?.message || res.data?.message || res.data?.error || 'Reset failed';
+                Alert.alert('Error', errMsg);
             }
         } catch (e) {
             Alert.alert('Error', 'Could not reset password. Please try again.');

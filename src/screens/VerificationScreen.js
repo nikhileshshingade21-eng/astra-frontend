@@ -118,9 +118,12 @@ export default function VerificationScreen({ navigation }) {
     useEffect(() => {
         if (socket && activeClass && isActive) {
             const eventName = 'ATTENDANCE_MARKED';
-            socket.on(eventName, (data) => {
-                const roll = data.roll_number || (data.student && data.student.roll_number);
-                console.log('[SOCKET] Real attendance received:', roll);
+            socket.on(eventName, (payload) => {
+                // Handle standardized contract payload { data: { roll_number, ... } }
+                const data = payload.data || payload; 
+                const roll = data.roll_number;
+                
+                console.log('[SOCKET] Standardized verification received:', roll);
                 if (roll) {
                     setGridData(prev => {
                         return prev.map(s => s.id === roll ? { ...s, verified: true } : s);

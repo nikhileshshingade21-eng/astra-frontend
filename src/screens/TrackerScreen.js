@@ -74,16 +74,29 @@ export default function TrackerScreen({ route, navigation }) {
         }
     };
 
-    // Real-time synchronization
+    // 🛰️ SOCKET SYNC: Real-time trail updates
     React.useEffect(() => {
-        let interval;
-        if (selectedStudent && searchQuery) {
-            interval = setInterval(() => {
-                searchStudent(true);
-            }, 5000);
-        }
+        if (!selectedStudent || !searchQuery) return;
+
+        const io = require('socket.io-client');
+        const socket = io(API_BASE.replace('/api', ''), {
+            transports: ['websocket'],
+            reconnection: true
+        });
+
+        socket.on('ATTENDANCE_MARKED', (payload) => {
+            const data = payload.data || payload; // Support both old and new contract formats
+            const roll = data.roll_number || (data.student && data.student.roll_number);
+            
+            if (roll && roll.toUpperCase() === searchQuery.toUpperCase()) {
+                console.log('[TRACKER] Live activity detected for targeted node:', roll);
+                searchStudent(true); // Silent refresh
+            }
+        });
+
         return () => {
-            if (interval) clearInterval(interval);
+            console.log('[TRACKER] Releasing track listener');
+            socket.disconnect();
         };
     }, [selectedStudent, searchQuery]);
 
