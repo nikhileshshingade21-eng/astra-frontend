@@ -141,7 +141,7 @@ export default function AnnouncementsScreen() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok && res.data) {
-                setAnnouncements(res.data.data || []);
+                setAnnouncements(res.data.announcements || []);
             }
         } catch (e) {
             console.warn('[Announcements] Fetch error:', e.message);

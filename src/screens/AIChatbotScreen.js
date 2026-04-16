@@ -129,11 +129,10 @@ export default function AIChatbotScreen({ route, navigation }) {
                 isMultipart: true
             });
             
-            if (res.ok) {
-                const data = await res.json();
+            if (res.ok && res.data) {
                 setMessages(prev => [...prev, {
                     id: Date.now(),
-                    text: `📎 Uploaded: ${file.name}\n\n${data.message}`,
+                    text: `📎 Uploaded: ${file.name}\n\n${res.data.message || 'File processed successfully.'}`,
                     isBot: true,
                     time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
                 }]);

@@ -235,6 +235,7 @@ export default function AttendanceScreen({ route, navigation }) {
                 },
                 body: JSON.stringify({
                     class_id: classIdToUse,
+                    device_id: deviceId,
                     gps_lat: location.latitude,
                     gps_lng: location.longitude,
                     method: providedClassId ? 'qr_scan' : authMethodUsed,
