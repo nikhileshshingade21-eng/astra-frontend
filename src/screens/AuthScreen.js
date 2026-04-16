@@ -35,14 +35,14 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const colors = {
-    bg: '#020617',
+    bg: '#1e1b4b', // Deep Royal Blue-Purple
     glass: 'rgba(255, 255, 255, 0.03)',
     border: 'rgba(255, 255, 255, 0.08)',
     textDim: 'rgba(255, 255, 255, 0.4)',
-    student: '#0066ff',
+    student: '#fbbf24', // Electric Gold
     faculty: '#bf00ff',
     admin: '#ff0055',
-    neonGreen: '#00ffaa',
+    neonGreen: '#fbbf24', // Unified with Gold theme
     hot: '#ff3d71'
 };
 
