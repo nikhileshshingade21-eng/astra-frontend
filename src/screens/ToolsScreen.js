@@ -1,8 +1,10 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Platform, UIManager, LayoutAnimation } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 // import { BlurView } from '@react-native-community/blur';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import * as SecureStore from '../utils/storage';
+import { fetchWithTimeout } from '../utils/api';
 
 const { width } = Dimensions.get('window');
 
@@ -28,23 +30,34 @@ export default function ToolsScreen({ route, navigation }) {
     const roleColor = role === 'admin' ? colors.neonBlue : colors.neonPurple;
 
     const tools = [
-        { id: 'map', name: 'CAMPUS_MAP', desc: 'Real-time spatial visualizer', icon: 'map-outline', color: colors.neonBlue, screen: 'RealTimeMap' },
-        { id: 'directory', name: 'REGISTRY', desc: 'Secure student database', icon: 'people-outline', color: colors.neonPurple, screen: 'StudentDirectory' },
-        { id: 'tracker', name: 'PATH_AUDIT', desc: 'Movement & dwell analytics', icon: 'trail-sign-outline', color: colors.neonGreen, screen: 'Tracker' },
-        { id: 'verification', name: 'AUTH_GATE', desc: 'Trigger manual verification', icon: 'shield-checkmark-outline', color: colors.hot, screen: 'Verification' },
-        { id: 'zones', name: 'GEO_ZONES', desc: 'Perimeter management', icon: 'grid-outline', color: colors.neonBlue, screen: 'ZoneManagement', adminOnly: true },
-        { id: 'reports', name: 'INTEL_REPORTS', desc: 'Automated data synthesis', icon: 'document-text-outline', color: colors.neonGreen, action: 'report' },
-        { id: 'alerts', name: 'COMMS_HUB', desc: 'Global broadcast protocol', icon: 'megaphone-outline', color: colors.hot, action: 'alert' },
-        { id: 'diag', name: 'UX_DIAG_MODE', desc: 'Component stress testing', icon: 'flask-outline', color: colors.neonBlue, screen: 'TestLottie', adminOnly: true },
+        { id: 'map', name: 'Campus Map', desc: 'See live campus activity', icon: 'map-outline', color: colors.neonBlue, screen: 'RealTimeMap' },
+        { id: 'directory', name: 'Students', desc: 'Search student records', icon: 'people-outline', color: colors.neonPurple, screen: 'StudentDirectory' },
+        { id: 'tracker', name: 'Tracker', desc: 'Movement and attendance logs', icon: 'trail-sign-outline', color: colors.neonGreen, screen: 'Tracker' },
+        { id: 'calendar', name: 'Academic Calendar', desc: 'Institutional events and holidays', icon: 'calendar-outline', color: '#ff8c00', screen: 'AcademicCalendar' },
+        { id: 'verification', name: 'Verification', desc: 'Manually verify attendance', icon: 'shield-checkmark-outline', color: colors.hot, screen: 'Verification' },
+        { id: 'zones', name: 'Campus Zones', desc: 'Manage location areas', icon: 'grid-outline', color: colors.neonBlue, screen: 'ZoneManagement', adminOnly: true },
+        { id: 'reports', name: 'Reports', desc: 'Generate data reports', icon: 'document-text-outline', color: colors.neonGreen, action: 'report' },
+        { id: 'alerts', name: 'Announcements', desc: 'Send campus-wide alerts', icon: 'megaphone-outline', color: colors.hot, action: 'alert' },
+        { id: 'diag', name: 'Test Mode', desc: 'Test app components', icon: 'flask-outline', color: colors.neonBlue, screen: 'TestLottie', adminOnly: true },
     ];
 
-    const handlePress = (tool) => {
+    const handlePress = async (tool) => {
         if (tool.screen) {
             navigation.navigate(tool.screen, { user });
         } else if (tool.action === 'report') {
-            alert('INTEL_REPORT_GENERATED: Sent to institutional mail.');
+            try {
+                const token = await SecureStore.getItemAsync('token');
+                const res = await fetchWithTimeout('/api/admin/generate-report', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) alert(res.data?.message || 'Report sent');
+                else alert(res.data?.error || 'Failed to send report');
+            } catch (e) {
+                alert('Connection error');
+            }
         } else if (tool.action === 'alert') {
-            navigation.navigate('Alerts', { user });
+            navigation.navigate('Board', { user });
         }
     };
 
@@ -57,12 +70,12 @@ export default function ToolsScreen({ route, navigation }) {
 
             <View style={styles.header}>
                 <View style={styles.headerRow}>
-                    <Text style={styles.title}>SYSTEM_TOOLS</Text>
+                    <Text style={styles.title}>Tools</Text>
                     <View style={styles.authBadge}>
-                        <Text style={[styles.authText, { color: roleColor }]}>{role.toUpperCase()}_ACCESS</Text>
+                        <Text style={[styles.authText, { color: roleColor }]}>{role.toUpperCase()}</Text>
                     </View>
                 </View>
-                <Text style={styles.sub}>High-level institutional control & management modules.</Text>
+                <Text style={styles.sub}>Manage and control campus features.</Text>
             </View>
 
             <View style={styles.grid}>
@@ -94,7 +107,7 @@ export default function ToolsScreen({ route, navigation }) {
             </View>
 
             <View style={styles.footer}>
-                <Text style={styles.footerText}>ASTRA_OS V2.0.0 — KERNEL_TOOLKIT</Text>
+                <Text style={styles.footerText}>ASTRA v2.0.0</Text>
                 <View style={styles.footerLine} />
             </View>
         </ScrollView>

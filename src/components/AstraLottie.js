@@ -5,8 +5,8 @@ import LottieView from 'lottie-react-native';
 const animations = {
     loading: 'https://assets9.lottiefiles.com/packages/lf20_p8bfn5to.json', // Cyber circle loader
     success: 'https://assets9.lottiefiles.com/packages/lf20_pqnfmone.json', // Tech checkmark
-    error: 'https://assets9.lottiefiles.com/packages/lf20_ghp9v0sc.json',   // Warning pulse
-    location: 'https://assets5.lottiefiles.com/packages/lf20_m6cu9zrj.json' // Satellite link
+    error: 'https://assets2.lottiefiles.com/packages/lf20_Tkwjw8.json',     // Warning pulse
+    location: 'https://assets1.lottiefiles.com/private_files/lf30_hsabboks.json' // Satellite link
 };
 
 export default function AstraLottie({ size = 150, type = 'loading' }) {

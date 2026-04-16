@@ -31,26 +31,26 @@ const colors = {
 const roles = [
     {
         id: 'student',
-        title: 'STUDENT_CORE',
+        title: 'Student',
         icon: 'person-outline',
         color: colors.student,
-        desc: 'Access attendance, grades, and AI insights.',
+        desc: 'View attendance, grades, and smart insights.',
         accent: '#0066ff'
     },
     {
         id: 'faculty',
-        title: 'FACULTY_HUB',
+        title: 'Faculty',
         icon: 'easel-outline',
         color: colors.faculty,
-        desc: 'Monitor live sessions and verify presence.',
+        desc: 'Manage classes and track student attendance.',
         accent: '#8a00ff'
     },
     {
         id: 'admin',
-        title: 'ADMIN_ROOT',
+        title: 'Admin',
         icon: 'shield-half-outline',
         color: colors.admin,
-        desc: 'Global system control and campus analytics.',
+        desc: 'Campus management and system settings.',
         accent: '#ff0000'
     }
 ];
@@ -72,7 +72,7 @@ export default function RoleSelectionScreen({ navigation }) {
                 <View style={styles.header}>
                     <Image source={require('../../assets/logo.png')} style={styles.logo} />
                     <View style={styles.divider} />
-                    <Text style={styles.tagline}>CHOOSE YOUR ACCESS PROTOCOL</Text>
+                    <Text style={styles.tagline}>SELECT YOUR ROLE</Text>
                 </View>
 
                 <View style={styles.grid}>
@@ -90,13 +90,13 @@ export default function RoleSelectionScreen({ navigation }) {
                                     </View>
                                     <View style={[styles.statusPill, { borderColor: role.color + '40' }]}>
                                         <View style={[styles.statusDot, { backgroundColor: role.color }]} />
-                                        <Text style={[styles.statusText, { color: role.color }]}>READY</Text>
+                                        <Text style={[styles.statusText, { color: role.color }]}>Active</Text>
                                     </View>
                                 </View>
                                 <Text style={[styles.roleTitle, { color: role.color }]}>{role.title}</Text>
                                 <Text style={styles.roleDesc}>{role.desc}</Text>
                                 <View style={styles.cardFooter}>
-                                    <Text style={styles.footerText}>INITIATE_LINK</Text>
+                                    <Text style={styles.footerText}>Continue</Text>
                                     <Ionicons name="chevron-forward" size={12} color={role.color} />
                                 </View>
                             </View>
@@ -105,7 +105,7 @@ export default function RoleSelectionScreen({ navigation }) {
                 </View>
 
                 <View style={styles.bottomInfo}>
-                    <Text style={styles.versionText}>ASTRA_OS V2.0.0 — SECURE_ENVIRONMENT</Text>
+                    <Text style={styles.versionText}>ASTRA v2.0.0</Text>
                 </View>
             </View>
         </View>

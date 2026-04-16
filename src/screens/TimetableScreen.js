@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
     View, 
     Text, 
@@ -6,26 +6,25 @@ import {
     ScrollView, 
     RefreshControl, 
     TouchableOpacity, 
-    Alert, 
     StatusBar, 
     Dimensions,
     Platform,
-    UIManager
+    UIManager,
+    LayoutAnimation
 } from 'react-native';
 import * as SecureStore from '../utils/storage';
 import { useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
-// import { BlurView } from '@react-native-community/blur';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Animated, { 
+    FadeInRight,
     useSharedValue, 
     useAnimatedStyle, 
     withRepeat, 
-    withTiming, 
-    LayoutAnimation 
+    withTiming 
 } from 'react-native-reanimated';
-import { API_BASE } from '../api/config';
-import { fetchWithTimeout } from '../utils/api';
+import { fetchWithTimeout, fetchWithCache } from '../utils/api';
+import Colors from '../theme/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -33,23 +32,13 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const colors = {
-    bg: '#020617',
-    glass: 'rgba(255, 255, 255, 0.03)',
-    border: 'rgba(255, 255, 255, 0.08)',
-    textDim: 'rgba(255, 255, 255, 0.4)',
-    neonBlue: '#00f2ff',
-    neonGreen: '#00ffaa',
-    neonPink: '#ff00e5',
-    neonPurple: '#bf00ff',
-    hot: '#ff3d71'
-};
-
 const getCurrentWeekDates = () => {
     const today = new Date();
     const dayOfWeek = today.getDay();
     const MondayDate = new Date(today);
-    MondayDate.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    // If it's Sunday, anchor to NEXT Monday instead of previous
+    const offset = dayOfWeek === 0 ? 1 : -(dayOfWeek - 1);
+    MondayDate.setDate(today.getDate() + offset);
     const dates = [];
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     for (let i = 0; i < 6; i++) {
@@ -65,13 +54,18 @@ const getCurrentWeekDates = () => {
     return dates;
 };
 
+const parseTimeToMinutes = (timeStr) => {
+    if (!timeStr) return 0;
+    const parts = timeStr.split(':').map(Number);
+    return (parts[0] || 0) * 60 + (parts[1] || 0);
+};
+
 const formatTime = (time) => {
     if (!time) return '';
     const [h, m] = time.split(':');
     let hours = parseInt(h);
     const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; 
+    hours = hours % 12 || 12; 
     return `${hours}:${m} ${ampm}`;
 };
 
@@ -82,14 +76,28 @@ export default function TimetableScreen({ route, navigation }) {
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [selectedDay, setSelectedDay] = useState(WEEK_DATES[Math.min(5, Math.max(0, new Date().getDay() - 1))].day);
+    const [calendarEvent, setCalendarEvent] = useState(null);
+    
+    // Default to today (or Monday if Sunday)
+    const initialDayIndex = Math.min(5, Math.max(0, new Date().getDay() - 1));
+    const [selectedDay, setSelectedDay] = useState(WEEK_DATES[initialDayIndex].day);
+    
     const [stats, setStats] = useState({ attended: 0, total: 0 });
+    const [currentMinutes, setCurrentMinutes] = useState(new Date().getHours() * 60 + new Date().getMinutes());
 
     const livePulse = useSharedValue(1);
 
     useEffect(() => {
         livePulse.value = withRepeat(withTiming(1.2, { duration: 1000 }), -1, true);
         fetchStats();
+        
+        // Update current time every minute for the timeline indicator
+        const timer = setInterval(() => {
+            const now = new Date();
+            setCurrentMinutes(now.getHours() * 60 + now.getMinutes());
+        }, 60000);
+        
+        return () => clearInterval(timer);
     }, []);
 
     const fetchStats = async () => {
@@ -105,7 +113,9 @@ export default function TimetableScreen({ route, navigation }) {
             if (res.ok && res.data) {
                 setStats({ attended: res.data.attended || 0, total: res.data.total || 0 });
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[Timetable] Stats error:', e.message);
+        }
     };
 
     const loadTimetable = useCallback(async (day, force = false) => {
@@ -114,19 +124,46 @@ export default function TimetableScreen({ route, navigation }) {
             const prog = (user.programme || 'all').trim();
             const sec = (user.section || 'all').trim();
             const url = `/api/timetable/today?day=${day}&programme=${encodeURIComponent(prog)}&section=${encodeURIComponent(sec)}${force ? '&refresh=true' : ''}`;
-            const res = await fetchWithTimeout(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            
+            const processData = (data) => {
+                const enhancedClasses = (data.classes || []).map(c => {
+                    const startMin = parseTimeToMinutes(c.start_time);
+                    const endMin = parseTimeToMinutes(c.end_time);
+                    const isToday = new Date().getDay() - 1 === WEEK_DATES.findIndex(d => d.day === day);
+                    
+                    let liveStatus = 'upcoming';
+                    if (isToday) {
+                        if (currentMinutes >= startMin && currentMinutes < endMin) liveStatus = 'live';
+                        else if (currentMinutes >= endMin) liveStatus = 'past';
+                    }
+                    return { ...c, startMin, endMin, live_status: liveStatus };
+                });
+                
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setClasses(enhancedClasses);
+                setCalendarEvent(data.calendar_event || null);
+            };
+
+            const res = await fetchWithCache(url, { headers: { 'Authorization': `Bearer ${token}` } }, (cached) => {
+                if (cached.ok && cached.data) {
+                    processData(cached.data);
+                }
+            });
+            
             if (res.status === 401) {
                 navigation.replace('Auth');
                 return;
             }
+            
             if (res.ok && res.data) {
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                setClasses(res.data.classes || []);
+                processData(res.data);
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[Timetable] Load error:', e.message);
+        }
         setLoading(false);
         setRefreshing(false);
-    }, [user.programme, user.section]);
+    }, [user.programme, user.section, currentMinutes]);
 
     useFocusEffect(useCallback(() => { loadTimetable(selectedDay, true); }, [selectedDay, loadTimetable]));
 
@@ -136,165 +173,212 @@ export default function TimetableScreen({ route, navigation }) {
         fetchStats();
     };
 
-    const bunkingData = useMemo(() => {
-        const { attended: A, total: T } = stats;
-        if (T === 0) return { canBunk: 0, needAttend: 0 };
-        const canBunk = Math.floor((A / 0.75) - T);
-        const needAttend = Math.max(0, Math.ceil((0.75 * T - A) / 0.25));
-        return { canBunk: Math.max(0, canBunk), needAttend };
-    }, [stats]);
+    const livePulseStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: livePulse.value }],
+        opacity: 1.2 - livePulse.value
+    }));
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
-            <LinearGradient colors={['#020617', '#0f172a']} style={StyleSheet.absoluteFill} />
+            <StatusBar barStyle="light-content" backgroundColor={Colors.bg} />
+            <LinearGradient colors={Colors.gradientBg} style={StyleSheet.absoluteFill} />
 
             <View style={styles.header}>
                 <View>
-                    <Text style={styles.title}>CHRONO_GRAPH</Text>
-                    <Text style={styles.sub}>SEQUENCE_SYNC_MODE_ v2.0</Text>
+                    <Text style={styles.title}>Schedule</Text>
+                    <Text style={styles.sub}>{user.programme} • Section {user.section}</Text>
                 </View>
-                <View style={styles.roleBadge}>
+                <View style={[styles.roleBadge, { backgroundColor: Colors[user.role] || Colors.primary }]}>
                     <Text style={styles.roleText}>{user.role?.toUpperCase()}</Text>
                 </View>
             </View>
 
             <View style={styles.tabSection}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabScroll}>
-                    {WEEK_DATES.map(item => (
-                        <TouchableOpacity 
-                            key={item.day} 
-                            onPress={() => setSelectedDay(item.day)}
-                            style={[styles.dayTab, selectedDay === item.day && styles.dayTabActive]}
-                        >
-                            <Text style={[styles.dayNum, selectedDay === item.day && { color: colors.neonBlue }]}>{item.num}</Text>
-                            <Text style={[styles.dayLabel, selectedDay === item.day && { color: colors.neonBlue }]}>{item.label}</Text>
-                            {selectedDay === item.day && <View style={[styles.tabDot, { backgroundColor: colors.neonBlue }]} />}
-                        </TouchableOpacity>
-                    ))}
+                    {WEEK_DATES.map(item => {
+                        const isSelected = selectedDay === item.day;
+                        const isToday = item.num === String(new Date().getDate()).padStart(2, '0');
+                        
+                        return (
+                            <TouchableOpacity 
+                                key={item.day} 
+                                onPress={() => setSelectedDay(item.day)}
+                                style={[styles.dayTab, isSelected && styles.dayTabActive, isToday && !isSelected && styles.dayTabToday]}
+                            >
+                                <Text style={[styles.dayNum, isSelected && { color: Colors.primary }, isToday && !isSelected && { color: '#fff' }]}>{item.num}</Text>
+                                <Text style={[styles.dayLabel, isSelected && { color: Colors.primary }]}>{item.label}</Text>
+                                {isSelected && <View style={[styles.tabDot, { backgroundColor: Colors.primary }]} />}
+                                {isToday && !isSelected && <View style={styles.todayIndicator} />}
+                            </TouchableOpacity>
+                        );
+                    })}
                 </ScrollView>
             </View>
 
             <ScrollView 
                 contentContainerStyle={styles.scrollContent}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neonBlue} />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Bunking Engine Card */}
-                {user.role === 'student' && (
-                    <View blurType="dark" blurAmount={8} style={styles.bunkCard}>
-                        <LinearGradient colors={['rgba(0, 242, 255, 0.1)', 'transparent']} style={StyleSheet.absoluteFill} />
-                        <View style={styles.bunkHeader}>
-                            <Ionicons name="calculator-outline" size={16} color={colors.neonBlue} />
-                            <Text style={styles.bunkTitle}>BUNKING_ENGINE_v2</Text>
+                {/* Calendar Event Banner */}
+                {calendarEvent && (
+                    <Animated.View entering={FadeInRight} style={[styles.calendarBanner, { borderColor: calendarEvent.is_system_holiday ? Colors.danger + '40' : Colors.accent + '40' }]}>
+                        <LinearGradient 
+                            colors={calendarEvent.is_system_holiday ? [Colors.danger + '15', 'transparent'] : [Colors.accent + '15', 'transparent']} 
+                            start={{x:0, y:0}} end={{x:1, y:0}} 
+                            style={StyleSheet.absoluteFill} 
+                        />
+                        <View style={[styles.bannerIcon, { backgroundColor: calendarEvent.is_system_holiday ? Colors.danger : Colors.accent }]}>
+                            <Ionicons name={calendarEvent.type === 'exam' ? 'document-text' : 'sunny'} size={18} color="#fff" />
                         </View>
-                        <View style={styles.bunkStats}>
-                            <View style={styles.bunkStat}>
-                                <Text style={styles.bunkVal}>{bunkingData.canBunk}</Text>
-                                <Text style={styles.bunkLab}>CLASSES_SAFE_TO_BUNK</Text>
-                            </View>
-                            <View style={styles.vLine} />
-                            <View style={styles.bunkStat}>
-                                <Text style={[styles.bunkVal, { color: bunkingData.needAttend > 0 ? colors.hot : colors.neonGreen }]}>
-                                    {bunkingData.needAttend > 0 ? bunkingData.needAttend : '75%_STABLE'}
-                                </Text>
-                                <Text style={styles.bunkLab}>{bunkingData.needAttend > 0 ? 'RECOVER_REQUIRED' : 'STATUS_NOMINAL'}</Text>
-                            </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.bannerTitle}>{calendarEvent.event_name.toUpperCase()}</Text>
+                            <Text style={styles.bannerSub}>
+                                {calendarEvent.is_system_holiday ? 'Instruction suspended today' : 'Special institutional event'}
+                            </Text>
                         </View>
-                    </View>
+                    </Animated.View>
                 )}
 
-                {classes.length > 0 ? (
-                    classes.map((c, i) => {
-                        const subColor = i % 3 === 0 ? colors.neonBlue : (i % 3 === 1 ? colors.neonPurple : colors.neonGreen);
-                        return (
-                            <TouchableOpacity 
-                                key={c.id} 
-                                style={[styles.slot, { borderColor: subColor + '30' }]}
-                                onPress={() => user.role === 'student' ? navigation.navigate('Attendance', { classId: c.id }) : navigation.navigate('Monitor', { classId: c.id })}
-                            >
-                                <View style={styles.timeCluster}>
-                                    <Text style={styles.startTime}>{formatTime(c.start_time).split(' ')[0]}</Text>
-                                    <View style={[styles.bridge, { backgroundColor: subColor }]} />
-                                    <Text style={styles.endTime}>{formatTime(c.end_time).split(' ')[0]}</Text>
-                                    <Text style={styles.ampm}>{formatTime(c.start_time).split(' ')[1]}</Text>
-                                </View>
-                                <View style={styles.infoBox}>
-                                    <View style={styles.infoHead}>
-                                        <Text style={[styles.subCode, { color: subColor }]}>{c.code}</Text>
-                                        <Text style={styles.roomBadge}>ROOM_{c.room}</Text>
+                {/* Classes Timeline */}
+                <View style={styles.timelineContainer}>
+                    {classes.length === 0 && !loading ? (
+                        <View style={styles.emptyState}>
+                            <Ionicons 
+                                name={calendarEvent ? (calendarEvent.type === 'exam' ? 'pencil-outline' : 'cafe-outline') : "sunny-outline"} 
+                                size={40} 
+                                color={Colors.textMuted} 
+                            />
+                            <Text style={styles.emptyText}>{calendarEvent ? calendarEvent.event_name : "No classes scheduled"}</Text>
+                            <Text style={styles.emptySub}>{calendarEvent ? "Institutional Protocol Active" : "Enjoy your free day"}</Text>
+                        </View>
+                    ) : (
+                        classes.map((cls, index) => {
+                            const isLive = cls.live_status === 'live';
+                            const isPast = cls.live_status === 'past';
+                            
+                            return (
+                                <Animated.View key={index} entering={FadeInRight.delay(index * 50)} style={styles.timelineBox}>
+                                    <View style={styles.timeColumn}>
+                                        <Text style={[styles.timeText, isPast && styles.textDim]}>{formatTime(cls.start_time)}</Text>
+                                        <View style={[styles.timeLine, isLive && { backgroundColor: Colors.primary }, isPast && { opacity: 0.2 }]} />
+                                        <Text style={[styles.timeSub, isPast && styles.textDim]}>{formatTime(cls.end_time)}</Text>
                                     </View>
-                                    <Text style={styles.subName}>{(c.name || 'UNNAMED_SEQ').toUpperCase()}</Text>
-                                    <View style={styles.metaBox}>
-                                        <Ionicons name="person-outline" size={10} color={colors.textDim} />
-                                        <Text style={styles.metaText}>INSTR_VEC_7</Text>
-                                    </View>
-                                </View>
-                                <View style={styles.statusCol}>
-                                    {c.attendance_status === 'present' ? (
-                                        <Ionicons name="checkmark-shield" size={20} color={colors.neonGreen} />
-                                    ) : (
-                                        <Ionicons name="ellipsis-horizontal-circle" size={20} color={colors.textDim} />
-                                    )}
-                                </View>
-                            </TouchableOpacity>
-                        );
-                    })
-                ) : (
-                    <View style={styles.emptyBox}>
-                        <Ionicons name="calendar-outline" size={60} color={colors.textDim} />
-                        <Text style={styles.emptyText}>CHRONO_GAP_DETECTED</Text>
-                        <Text style={styles.emptySub}>No academic sequences scheduled for this period.</Text>
-                    </View>
-                )}
+                                    
+                                    <TouchableOpacity 
+                                        activeOpacity={0.8}
+                                        onPress={() => {
+                                            if (user.role === 'student' && !isPast) {
+                                                navigation.navigate('Attendance', { user, classId: cls.id });
+                                            }
+                                        }}
+                                        style={[
+                                            styles.classCard, 
+                                            isLive && styles.classCardLive,
+                                            isPast && styles.classCardPast
+                                        ]}
+                                    >
+                                        {isLive && (
+                                            <View style={styles.liveIndicatorContainer}>
+                                                <Animated.View style={[styles.livePulse, livePulseStyle]} />
+                                                <View style={styles.liveDot} />
+                                                <Text style={styles.liveText}>HAPPENING NOW</Text>
+                                            </View>
+                                        )}
+                                        
+                                        <View style={styles.classHeader}>
+                                            <Text style={[styles.subjectCode, isLive && { color: Colors.primary }, isPast && styles.textDim]}>{cls.code}</Text>
+                                            <View style={{ flexDirection: 'row', gap: 10 }}>
+                                                <View style={styles.roomTag}>
+                                                    <Ionicons name="location" size={10} color={isPast ? Colors.textMuted : Colors.primary} />
+                                                    <Text style={[styles.roomText, isPast && styles.textDim]}>{cls.room}</Text>
+                                                </View>
+                                            </View>
+                                        </View>
+                                        
+                                        <Text style={[styles.subjectName, isPast && styles.textDim]}>{(cls.name || 'Unknown').replace(/_/g, ' ')}</Text>
+                                        
+                                        <View style={styles.facultyRow}>
+                                            <Ionicons name="person-outline" size={12} color={Colors.textMuted} />
+                                            <Text style={styles.facultyText}>{cls.faculty || 'TBA'}</Text>
+                                        </View>
+                                        
+                                        {/* Quick Mark Button overlay if it's the current class */}
+                                        {isLive && user.role === 'student' && (
+                                            <View style={styles.quickMarkBtn}>
+                                                <Text style={styles.quickMarkText}>Mark</Text>
+                                                <Ionicons name="arrow-forward" size={12} color="#fff" />
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                </Animated.View>
+                            );
+                        })
+                    )}
+                </View>
             </ScrollView>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.bg },
-    header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    title: { fontFamily: 'Tanker', fontSize: 28, color: '#fff', letterSpacing: 1 },
-    sub: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.neonBlue, letterSpacing: 2 },
-    roleBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: colors.border },
-    roleText: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.textDim },
+    container: { flex: 1, backgroundColor: Colors.bg },
+    
+    header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    title: { fontFamily: 'Tanker', fontSize: 32, color: '#fff', letterSpacing: 0.5 },
+    sub: { fontFamily: 'Satoshi-Bold', fontSize: 12, color: Colors.textMuted, marginTop: 4 },
+    roleBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
+    roleText: { fontFamily: 'Satoshi-Black', fontSize: 10, color: '#fff', letterSpacing: 1 },
 
-    tabSection: { marginBottom: 10 },
-    tabScroll: { paddingHorizontal: 24, gap: 15 },
-    dayTab: { width: 60, height: 80, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 20, borderWidth: 1, borderColor: colors.border },
-    dayTabActive: { borderColor: colors.neonBlue, backgroundColor: 'rgba(0, 242, 255, 0.05)' },
-    dayNum: { fontFamily: 'Tanker', fontSize: 22, color: colors.textDim },
-    dayLabel: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.textDim, marginTop: 4 },
-    tabDot: { position: 'absolute', bottom: 10, width: 4, height: 4, borderRadius: 2 },
+    tabSection: { borderBottomWidth: 1, borderBottomColor: Colors.border, paddingBottom: 15 },
+    tabScroll: { paddingHorizontal: 24, gap: 10 },
+    dayTab: { width: 55, height: 75, borderRadius: 16, backgroundColor: Colors.bgCard, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+    dayTabActive: { backgroundColor: Colors.primaryGlass, borderColor: Colors.primary + '50' },
+    dayTabToday: { borderColor: Colors.borderLight, backgroundColor: 'rgba(255,255,255,0.05)' },
+    dayNum: { fontFamily: 'Tanker', fontSize: 24, color: Colors.textMuted },
+    dayLabel: { fontFamily: 'Satoshi-Bold', fontSize: 10, color: Colors.textMuted },
+    tabDot: { width: 4, height: 4, borderRadius: 2, marginTop: 4 },
+    todayIndicator: { width: 4, height: 4, borderRadius: 2, marginTop: 4, backgroundColor: Colors.textMuted },
 
-    scrollContent: { paddingHorizontal: 24, paddingBottom: 100 },
-    bunkCard: { padding: 24, borderRadius: 28, borderWidth: 1, borderColor: colors.neonBlue + '30', overflow: 'hidden', marginBottom: 25 },
-    bunkHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
-    bunkTitle: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.neonBlue, letterSpacing: 2 },
-    bunkStats: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    bunkStat: { flex: 1, alignItems: 'center' },
-    bunkVal: { fontFamily: 'Tanker', fontSize: 28, color: '#fff' },
-    bunkLab: { fontFamily: 'Satoshi-Black', fontSize: 7, color: colors.textDim, letterSpacing: 1, marginTop: 5 },
-    vLine: { width: 1, height: 40, backgroundColor: colors.border },
+    scrollContent: { paddingHorizontal: 24, paddingVertical: 20, paddingBottom: 100 },
+    
+    emptyState: { alignItems: 'center', marginTop: 100 },
+    emptyText: { fontFamily: 'Tanker', fontSize: 20, color: Colors.textMuted, marginTop: 15, letterSpacing: 1 },
+    emptySub: { fontFamily: 'Satoshi-Medium', fontSize: 14, color: Colors.textDisabled, marginTop: 5 },
 
-    slot: { flexDirection: 'row', padding: 20, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, marginBottom: 12, alignItems: 'center' },
-    timeCluster: { width: 50, alignItems: 'center', gap: 4 },
-    startTime: { fontFamily: 'Satoshi-Black', fontSize: 10, color: '#fff' },
-    endTime: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textDim },
-    ampm: { fontFamily: 'Satoshi-Black', fontSize: 7, color: colors.neonBlue, marginTop: 2 },
-    bridge: { width: 2, height: 20, borderRadius: 1, opacity: 0.3 },
-    infoBox: { flex: 1, paddingHorizontal: 20 },
-    infoHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-    subCode: { fontFamily: 'Satoshi-Black', fontSize: 9, letterSpacing: 1 },
-    roomBadge: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.textDim },
-    subName: { fontFamily: 'Tanker', fontSize: 16, color: '#fff', letterSpacing: 0.5 },
-    metaBox: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-    metaText: { fontFamily: 'Satoshi-Bold', fontSize: 9, color: colors.textDim },
-    statusCol: { paddingLeft: 10 },
+    timelineContainer: { marginTop: 10 },
+    timelineBox: { flexDirection: 'row', marginBottom: 20 },
+    timeColumn: { width: 55, alignItems: 'center', paddingTop: 5 },
+    timeText: { fontFamily: 'Satoshi-Black', fontSize: 11, color: '#fff' },
+    timeSub: { fontFamily: 'Satoshi-Bold', fontSize: 10, color: Colors.textMuted },
+    timeLine: { flex: 1, width: 2, backgroundColor: Colors.border, marginVertical: 6, borderRadius: 1 },
+    
+    classCard: { flex: 1, backgroundColor: Colors.bgCard, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: Colors.border, marginLeft: 10 },
+    classCardLive: { backgroundColor: Colors.primaryGlass, borderColor: Colors.primary + '50' },
+    classCardPast: { opacity: 0.6 },
+    
+    liveIndicatorContainer: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
+    livePulse: { position: 'absolute', width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.primary },
+    liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.primary },
+    liveText: { fontFamily: 'Satoshi-Black', fontSize: 9, color: Colors.primary, letterSpacing: 1 },
+    
+    classHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+    subjectCode: { fontFamily: 'Satoshi-Black', fontSize: 11, color: Colors.textSecondary, letterSpacing: 0.5 },
+    roomTag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    roomText: { fontFamily: 'Satoshi-Bold', fontSize: 10, color: Colors.textSecondary },
+    
+    subjectName: { fontFamily: 'Tanker', fontSize: 22, color: '#fff', letterSpacing: 0.5, marginBottom: 12 },
+    
+    facultyRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    facultyText: { fontFamily: 'Satoshi-Medium', fontSize: 12, color: Colors.textMuted },
+    
+    textDim: { color: Colors.textMuted },
+    
+    quickMarkBtn: { position: 'absolute', right: 16, bottom: 16, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+    quickMarkText: { fontFamily: 'Satoshi-Bold', fontSize: 11, color: '#fff' },
 
-    emptyBox: { alignItems: 'center', marginTop: 100 },
-    emptyText: { fontFamily: 'Tanker', fontSize: 24, color: '#fff', marginTop: 20 },
-    emptySub: { fontFamily: 'Satoshi-Bold', fontSize: 12, color: colors.textDim, textAlign: 'center', marginTop: 10, paddingHorizontal: 40 }
+    calendarBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.bgCard, borderRadius: 20, padding: 16, marginBottom: 25, borderWidth: 1, gap: 15, overflow: 'hidden' },
+    bannerIcon: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    bannerTitle: { fontFamily: 'Tanker', fontSize: 18, color: '#fff', letterSpacing: 0.5 },
+    bannerSub: { fontFamily: 'Satoshi-Bold', fontSize: 10, color: Colors.textMuted, marginTop: 2, textTransform: 'uppercase', letterSpacing: 1 },
 });
-

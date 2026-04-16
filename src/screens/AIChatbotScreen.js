@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -6,15 +6,14 @@ import {
     TextInput,
     TouchableOpacity,
     ScrollView,
-    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     StatusBar,
+    ActivityIndicator,
     Dimensions
 } from 'react-native';
 import * as SecureStore from '../utils/storage';
 import LinearGradient from 'react-native-linear-gradient';
-// import { BlurView } from '@react-native-community/blur';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import DocumentPicker from 'react-native-document-picker';
 import Animated, { 
@@ -22,29 +21,30 @@ import Animated, {
     useAnimatedStyle, 
     withRepeat, 
     withTiming, 
-    withSequence 
+    FadeInDown,
+    FadeInUp
 } from 'react-native-reanimated';
-import { API_BASE } from '../api/config';
 import { fetchWithTimeout } from '../utils/api';
+import Colors from '../theme/colors';
 
 const { width } = Dimensions.get('window');
 
-const colors = {
-    bg: '#020617',
-    glass: 'rgba(255, 255, 255, 0.03)',
-    border: 'rgba(255, 255, 255, 0.08)',
-    textDim: 'rgba(255, 255, 255, 0.4)',
-    neonBlue: '#00f2ff',
-    neonGreen: '#00ffaa',
-    neonPink: '#ff00e5',
-    neonPurple: '#bf00ff',
-    hot: '#ff3d71'
-};
+const SUGGESTIONS = [
+    "What classes do I have today?",
+    "Am I safe in attendance?",
+    "Show my weekly summary",
+    "Predict my grade"
+];
 
 export default function AIChatbotScreen({ route, navigation }) {
-    const { user } = route.params || { user: { name: 'OPERATOR' } };
+    const { user } = route.params || { user: { name: 'Student' } };
     const [messages, setMessages] = useState([
-        { id: 1, text: `GREETINGS ${user.name?.toUpperCase()}. ASTRA_NEURAL_CORE V2.0 ONLINE. PROTOCOL: ACADEMIC_SYNTHESIS. STATUS: READY.`, isBot: true, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }
+        { 
+            id: 1, 
+            text: `Hi ${user.name?.split(' ')[0] || ''}! I'm ASTRA AI. Ask me about your schedule, attendance, or upload notes for me to summarize.`, 
+            isBot: true, 
+            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+        }
     ]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -54,7 +54,7 @@ export default function AIChatbotScreen({ route, navigation }) {
     const corePulse = useSharedValue(1);
 
     useEffect(() => {
-        corePulse.value = withRepeat(withTiming(1.2, { duration: 1000 }), -1, true);
+        corePulse.value = withRepeat(withTiming(1.1, { duration: 1000 }), -1, true);
     }, []);
 
     const sendMessage = async (customMessage = null) => {
@@ -71,7 +71,7 @@ export default function AIChatbotScreen({ route, navigation }) {
         setMessages(prev => [...prev, userMsg]);
         if (!customMessage) setInput('');
         setIsTyping(true);
-        setAiStatus('REASONING');
+        setAiStatus('Thinking...');
 
         try {
             const token = await SecureStore.getItemAsync('token');
@@ -84,15 +84,15 @@ export default function AIChatbotScreen({ route, navigation }) {
             if (res.ok && res.data) {
                 setMessages(prev => [...prev, {
                     id: Date.now() + 1,
-                    text: res.data.response || "NEURAL_INTERCEPT_ANOMALY: DATA_VOID.",
+                    text: res.data.response || "Sorry, I couldn't process that request.",
                     isBot: true,
                     time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
                 }]);
             } else {
-                setMessages(prev => [...prev, { id: Date.now() + 1, text: res.data?.error || "CORE_LINK_FAILURE: RETRY_HANDSHAKE.", isBot: true, time: "SYS" }]);
+                setMessages(prev => [...prev, { id: Date.now() + 1, text: res.data?.error || "Connection error. Please try again.", isBot: true, time: "SYS" }]);
             }
         } catch (e) {
-            setMessages(prev => [...prev, { id: Date.now() + 1, text: "NETWORK_ISOLATION_DETECTED.", isBot: true, time: "ERR" }]);
+            setMessages(prev => [...prev, { id: Date.now() + 1, text: "Network error occurred.", isBot: true, time: "ERR" }]);
         }
         setIsTyping(false);
         setAiStatus('');
@@ -115,104 +115,149 @@ export default function AIChatbotScreen({ route, navigation }) {
 
     const uploadFile = async (file) => {
         setIsTyping(true);
-        setAiStatus('PARSING_DATA');
+        setAiStatus('Reading document...');
         try {
             const token = await SecureStore.getItemAsync('token');
             const formData = new FormData();
             formData.append('file', { uri: file.uri, name: file.name, type: file.type || 'application/octet-stream' });
+            
             const res = await fetchWithTimeout(`/api/ai/upload`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData,
                 isMultipart: true
             });
+            
             if (res.ok) {
                 const data = await res.json();
                 setMessages(prev => [...prev, {
                     id: Date.now(),
-                    text: `📎 INGESTED: ${file.name}\n\n${data.message}`,
+                    text: `📎 Uploaded: ${file.name}\n\n${data.message}`,
                     isBot: true,
                     time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
                 }]);
-                setTimeout(() => sendMessage(`SYNTHESIZE_DOC: ${file.name}`), 1000);
+                setTimeout(() => sendMessage(`Please summarize the document: ${file.name}`), 1000);
             }
-        } catch (e) {}
+        } catch (e) {
+            setMessages(prev => [...prev, { id: Date.now() + 1, text: "Failed to upload document.", isBot: true, time: "ERR" }]);
+        }
         setIsTyping(false);
         setAiStatus('');
     };
 
     const coreStyle = useAnimatedStyle(() => ({
         transform: [{ scale: corePulse.value }],
-        opacity: isTyping ? 1 : 0.6
+        opacity: isTyping ? 1 : 0.4
     }));
+
+    // Suggestion chips at the bottom
+    const renderSuggestions = () => {
+        if (messages.length > 1) return null; // Only show initially
+        
+        return (
+            <Animated.View entering={FadeInUp.delay(500)} style={styles.suggestionsContainer}>
+                <Text style={styles.suggestionsTitle}>Suggested queries</Text>
+                <View style={styles.chipsWrapper}>
+                    {SUGGESTIONS.map((s, i) => (
+                        <TouchableOpacity 
+                            key={i} 
+                            style={styles.chip}
+                            onPress={() => sendMessage(s)}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={styles.chipText}>{s}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </Animated.View>
+        );
+    };
 
     return (
         <KeyboardAvoidingView 
             style={styles.container} 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-            <StatusBar barStyle="light-content" />
-            <LinearGradient colors={['#020617', '#0f172a']} style={StyleSheet.absoluteFill} />
-            
+            <StatusBar barStyle="light-content" backgroundColor={Colors.bg} />
+            <LinearGradient colors={Colors.gradientBg} style={StyleSheet.absoluteFill} />
+
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Ionicons name="chevron-back" size={24} color="#fff" />
                 </TouchableOpacity>
-                <View style={styles.headerInfo}>
-                    <Text style={styles.title}>NEURAL_CORE</Text>
-                    <View style={styles.statusRow}>
-                        <Animated.View style={[styles.statusDot, { backgroundColor: colors.neonBlue }, coreStyle]} />
-                        <Text style={styles.statusText}>{isTyping ? aiStatus : 'SYSTEM_IDLE'}</Text>
-                    </View>
+                <View style={styles.headerTitleContainer}>
+                    <Text style={styles.title}>ASTRA AI</Text>
+                    <Text style={styles.subTitle}>Academic Assistant</Text>
                 </View>
-                <TouchableOpacity style={styles.actionBtn}>
-                    <Ionicons name="ellipsis-horizontal" size={20} color={colors.textDim} />
-                </TouchableOpacity>
+                <Animated.View style={[styles.aiCoreIndicator, coreStyle]}>
+                    <View style={styles.aiCoreInner} />
+                </Animated.View>
             </View>
 
             <ScrollView 
-                style={styles.chatArea} 
-                contentContainerStyle={styles.chatContent}
                 ref={scrollRef}
+                style={styles.chatArea}
+                contentContainerStyle={styles.chatContent}
                 onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
                 showsVerticalScrollIndicator={false}
             >
-                {messages.map(msg => (
-                    <View key={msg.id} style={[styles.msgWrapper, msg.isBot ? styles.msgBot : styles.msgUser]}>
-                        <View blurType="dark" blurAmount={msg.isBot ? 5 : 2} style={[styles.bubble, msg.isBot ? styles.bubbleBot : styles.bubbleUser]}>
-                            <Text style={styles.msgText}>{msg.text}</Text>
-                            <Text style={styles.msgTime}>{msg.time.toUpperCase()}</Text>
+                {messages.map((msg, index) => (
+                    <Animated.View 
+                        key={msg.id} 
+                        entering={FadeInDown.springify()}
+                        style={[
+                            styles.messageWrapper,
+                            msg.isBot ? styles.messageWrapperBot : styles.messageWrapperUser
+                        ]}
+                    >
+                        {msg.isBot && (
+                            <View style={styles.botAvatar}>
+                                <Ionicons name="sparkles" size={14} color="#fff" />
+                            </View>
+                        )}
+                        <View style={[
+                            styles.messageBubble,
+                            msg.isBot ? styles.messageBot : styles.messageUser
+                        ]}>
+                            <Text style={styles.messageText}>{msg.text}</Text>
                         </View>
-                        {msg.isBot && <View style={[styles.botAccent, { backgroundColor: colors.neonBlue }]} />}
-                    </View>
+                    </Animated.View>
                 ))}
+                
+                {renderSuggestions()}
+
                 {isTyping && (
-                    <View style={[styles.msgWrapper, styles.msgBot]}>
-                        <View blurType="dark" blurAmount={3} style={[styles.bubble, styles.bubbleBot, styles.typingBubble]}>
-                            <ActivityIndicator size="small" color={colors.neonBlue} style={{ marginRight: 10 }} />
-                            <Text style={styles.typingText}>NEURAL_PROCESSING...</Text>
-                        </View>
+                    <View style={styles.typingIndicator}>
+                        <ActivityIndicator size="small" color={Colors.primary} />
+                        <Text style={styles.typingText}>{aiStatus || 'Thinking...'}</Text>
                     </View>
                 )}
             </ScrollView>
 
-            <View blurType="dark" blurAmount={15} style={styles.inputArea}>
+            <View style={styles.inputArea}>
                 <TouchableOpacity style={styles.attachBtn} onPress={pickDocument}>
-                    <Ionicons name="add" size={24} color={colors.neonBlue} />
+                    <Ionicons name="document-attach-outline" size={24} color={Colors.textMuted} />
                 </TouchableOpacity>
-                <TextInput
-                    style={styles.input}
-                    placeholder="QUERY_CORE_IDENTITY..."
-                    placeholderTextColor="rgba(255,255,255,0.2)"
-                    value={input}
-                    onChangeText={setInput}
-                    onSubmitEditing={() => sendMessage()}
-                    returnKeyType="send"
-                />
-                <TouchableOpacity style={styles.sendBtn} onPress={() => sendMessage()}>
-                    <LinearGradient colors={[colors.neonBlue, colors.neonPurple]} style={StyleSheet.absoluteFill} />
-                    <Ionicons name="flash" size={18} color="#000" />
+                
+                <View style={styles.inputWrapper}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Ask ASTRA..."
+                        placeholderTextColor={Colors.textMuted}
+                        value={input}
+                        onChangeText={setInput}
+                        multiline
+                    />
+                </View>
+                
+                <TouchableOpacity 
+                    style={[styles.sendBtn, !input.trim() && { opacity: 0.5 }]} 
+                    onPress={() => sendMessage()}
+                    disabled={!input.trim()}
+                >
+                    <LinearGradient colors={Colors.gradientPrimary} style={styles.sendGrad}>
+                        <Ionicons name="send" size={18} color="#fff" />
+                    </LinearGradient>
                 </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>
@@ -220,34 +265,44 @@ export default function AIChatbotScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.bg },
-    header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 20, flexDirection: 'row', alignItems: 'center', gap: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
-    backBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
-    headerInfo: { flex: 1 },
-    title: { fontFamily: 'Tanker', fontSize: 24, color: '#fff', letterSpacing: 1 },
-    statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-    statusDot: { width: 6, height: 6, borderRadius: 3 },
-    statusText: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.neonBlue, letterSpacing: 2 },
-    actionBtn: { padding: 8 },
+    container: { flex: 1, backgroundColor: Colors.bg },
+    
+    header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 15, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: Colors.border },
+    backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.glass, justifyContent: 'center', alignItems: 'center' },
+    headerTitleContainer: { flex: 1, marginLeft: 16 },
+    title: { fontFamily: 'Tanker', fontSize: 24, color: '#fff', letterSpacing: 0.5 },
+    subTitle: { fontFamily: 'Satoshi-Bold', fontSize: 11, color: Colors.textMuted },
+    aiCoreIndicator: { width: 14, height: 14, borderRadius: 7, backgroundColor: Colors.accentGlass, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: Colors.accent },
+    aiCoreInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.accent },
 
     chatArea: { flex: 1 },
     chatContent: { padding: 24, paddingBottom: 40 },
-    msgWrapper: { marginBottom: 20, maxWidth: '85%' },
-    msgBot: { alignSelf: 'flex-start' },
-    msgUser: { alignSelf: 'flex-end' },
-    bubble: { padding: 16, borderRadius: 24, borderWidth: 1, overflow: 'hidden' },
-    bubbleBot: { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: colors.border, borderBottomLeftRadius: 4 },
-    bubbleUser: { backgroundColor: 'rgba(0, 242, 255, 0.05)', borderColor: colors.neonBlue + '30', borderBottomRightRadius: 4 },
-    msgText: { fontFamily: 'Satoshi-Medium', fontSize: 14, color: '#fff', lineHeight: 22 },
-    msgTime: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.textDim, marginTop: 10, letterSpacing: 1 },
-    botAccent: { position: 'absolute', left: -2, top: '20%', bottom: '20%', width: 2, borderRadius: 2 },
+    
+    messageWrapper: { flexDirection: 'row', marginBottom: 20, alignItems: 'flex-end', maxWidth: '85%' },
+    messageWrapperBot: { alignSelf: 'flex-start' },
+    messageWrapperUser: { alignSelf: 'flex-end', justifyContent: 'flex-end' },
+    
+    botAvatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 8, marginBottom: 4 },
+    
+    messageBubble: { padding: 14, borderRadius: 20 },
+    messageBot: { backgroundColor: Colors.bgCard, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.border },
+    messageUser: { backgroundColor: Colors.primary, borderBottomRightRadius: 4 },
+    
+    messageText: { fontFamily: 'Satoshi-Medium', fontSize: 14, color: '#fff', lineHeight: 22 },
+    
+    suggestionsContainer: { marginTop: 10, marginBottom: 20 },
+    suggestionsTitle: { fontFamily: 'Satoshi-Bold', fontSize: 12, color: Colors.textMuted, marginBottom: 12, marginLeft: 4 },
+    chipsWrapper: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: { backgroundColor: Colors.primaryGlass, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: Colors.primary + '50' },
+    chipText: { fontFamily: 'Satoshi-Bold', fontSize: 13, color: Colors.primaryLight },
 
-    typingBubble: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
-    typingText: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.neonBlue, letterSpacing: 1 },
+    typingIndicator: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', padding: 12, backgroundColor: Colors.bgCard, borderRadius: 16, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.border },
+    typingText: { fontFamily: 'Satoshi-Medium', fontSize: 12, color: Colors.textMuted },
 
-    inputArea: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 15, paddingBottom: Platform.OS === 'ios' ? 40 : 20, alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border },
-    attachBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-    input: { flex: 1, height: 48, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 24, paddingHorizontal: 20, color: '#fff', fontFamily: 'Satoshi-Bold', fontSize: 14, borderWidth: 1, borderColor: colors.border },
-    sendBtn: { width: 48, height: 48, borderRadius: 24, marginLeft: 12, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }
+    inputArea: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 20, paddingVertical: 15, paddingBottom: Platform.OS === 'ios' ? 30 : 20, backgroundColor: Colors.bgCard, borderTopWidth: 1, borderTopColor: Colors.border },
+    attachBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+    inputWrapper: { flex: 1, backgroundColor: Colors.glass, borderRadius: 22, minHeight: 44, maxHeight: 100, marginHorizontal: 8, borderWidth: 1, borderColor: Colors.borderLight, paddingHorizontal: 16, paddingVertical: 12 },
+    input: { color: '#fff', fontFamily: 'Satoshi-Medium', fontSize: 14, padding: 0 },
+    sendBtn: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden' },
+    sendGrad: { flex: 1, justifyContent: 'center', alignItems: 'center' }
 });
-

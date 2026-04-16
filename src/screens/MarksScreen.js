@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -42,7 +42,7 @@ const colors = {
 };
 
 export default function MarksScreen({ route }) {
-    const { user } = route.params || { user: { name: 'OPERATOR' } };
+    const { user } = route.params || { user: { name: 'Student' } };
     const [marks, setMarks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -56,7 +56,9 @@ export default function MarksScreen({ route }) {
             if (res.ok && res.data) {
                 setMarks(res.data.marks || []);
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[Marks] Load error:', e.message);
+        }
         setLoading(false);
         setRefreshing(false);
     };
@@ -81,8 +83,8 @@ export default function MarksScreen({ route }) {
 
             <View style={styles.header}>
                 <View>
-                    <Text style={styles.title}>ACADEMIC_LEDGER</Text>
-                    <Text style={styles.sub}>PERFORMANCE_METRICS_v2.0</Text>
+                    <Text style={styles.title}>My Marks</Text>
+                    <Text style={styles.sub}>Academic Performance</Text>
                 </View>
                 <View style={styles.profileMini}>
                     <Text style={styles.rollCode}>{user.roll_number?.toUpperCase()}</Text>
@@ -95,7 +97,7 @@ export default function MarksScreen({ route }) {
                 showsVerticalScrollIndicator={false}
             >
                 <View blurType="dark" blurAmount={10} style={styles.summaryCard}>
-                    <Text style={styles.sumLab}>AGGREGATE_YIELD</Text>
+                    <Text style={styles.sumLab}>OVERALL AVERAGE</Text>
                     <Text style={styles.sumVal}>{aggregatePct.toFixed(1)}%</Text>
                     <View style={styles.progressTrack}>
                         <LinearGradient 
@@ -124,11 +126,11 @@ export default function MarksScreen({ route }) {
 
                                 <View style={styles.dataRow}>
                                     <View style={styles.dataPoint}>
-                                        <Text style={styles.dataLab}>DATA_TYPE</Text>
+                                        <Text style={styles.dataLab}>EXAM TYPE</Text>
                                         <Text style={styles.dataVal}>{mark.exam_type.toUpperCase()}</Text>
                                     </View>
                                     <View style={styles.dataPoint}>
-                                        <Text style={styles.dataLab}>SCORE_VEC</Text>
+                                        <Text style={styles.dataLab}>SCORE</Text>
                                         <Text style={styles.scoreVal}>
                                             <Text style={{color: '#fff'}}>{mark.marks_obtained}</Text>
                                             <Text style={{color: colors.textDim}}> / {mark.total_marks}</Text>
@@ -145,7 +147,7 @@ export default function MarksScreen({ route }) {
                 ) : (
                     <View style={styles.empty}>
                         <Ionicons name="layers-outline" size={60} color={colors.textDim} />
-                        <Text style={styles.emptyText}>NO_RECORDS_INDEXED</Text>
+                        <Text style={styles.emptyText}>No marks recorded yet</Text>
                     </View>
                 )}
             </ScrollView>

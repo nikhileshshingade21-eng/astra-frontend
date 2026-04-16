@@ -1,4 +1,5 @@
 import * as SecureStore from './storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE } from '../api/config';
 
 /**
@@ -70,4 +71,51 @@ export const fetchWithTimeout = async (endpoint, options = {}) => {
             json: async () => ({ error: 'CONNECTION_FAILURE' })
         };
     }
+};
+
+/**
+ * fetchWithCache
+ * Fetches data with a cache-first approach to improve Time to Interactive (TTI).
+ * It will resolve with cached data immediately, and silently fetch fresh data.
+ * Useful for Dashboard and Timetable endpoints.
+ */
+export const fetchWithCache = async (endpoint, options = {}, onCachedData) => {
+    const cacheKey = `@astra_cache_${endpoint}`;
+    
+    // 1. Try to load from cache immediately
+    try {
+        const cachedStr = await AsyncStorage.getItem(cacheKey);
+        if (cachedStr && onCachedData) {
+            const cachedObj = JSON.parse(cachedStr);
+            // Verify it hasn't expired (optional, defaulting to 2 hours here)
+            if (Date.now() - cachedObj.timestamp < 7200000) {
+                onCachedData({ ok: true, data: cachedObj.data, fromCache: true });
+            }
+        }
+    } catch (e) {
+        console.warn('Cache read error', e);
+    }
+
+    // 2. Perform network fetch
+    const response = await fetchWithTimeout(endpoint, options);
+    
+    // 3. Update cache if successful AND has actual data (prevent cache poisoning from errors)
+    if (response.ok && response.data) {
+        const hasRealData = response.data.classes ? response.data.classes.length > 0 : true;
+        if (hasRealData) {
+            try {
+                await AsyncStorage.setItem(cacheKey, JSON.stringify({
+                    timestamp: Date.now(),
+                    data: response.data
+                }));
+            } catch (e) {
+                console.warn('Cache write error', e);
+            }
+        } else {
+            // Wipe any stale cached empty result
+            try { await AsyncStorage.removeItem(cacheKey); } catch(e) {}
+        }
+    }
+    
+    return response;
 };

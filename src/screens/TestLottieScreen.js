@@ -5,6 +5,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import AstraLottie from '../components/AstraLottie';
 import WeatherWidget from '../components/WeatherWidget';
 
+import notifee, { AndroidImportance } from '@notifee/react-native';
+
 const colors = {
     bg: '#020617',
     neonBlue: '#00f2ff',
@@ -16,6 +18,24 @@ const colors = {
 export default function TestLottieScreen({ navigation }) {
     const [testType, setTestType] = useState('loading');
 
+    const triggerNotification = async () => {
+        try {
+            await notifee.requestPermission();
+            const channelId = await notifee.createChannel({
+                id: 'astra-high-priority',
+                name: 'ASTRA High Priority',
+                importance: AndroidImportance.HIGH,
+            });
+            await notifee.displayNotification({
+                title: 'ASTRA Component Test',
+                body: 'This is a local dummy notification directly from the Test screen.',
+                android: { channelId }
+            });
+        } catch (e) {
+            console.error('Test notification failed:', e);
+        }
+    };
+
     return (
         <View style={styles.container}>
             <LinearGradient colors={['#020617', '#0f172a']} style={StyleSheet.absoluteFill} />
@@ -24,11 +44,11 @@ export default function TestLottieScreen({ navigation }) {
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Ionicons name="arrow-back" size={24} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.title}>UX_COMPONENT_STRESS_TEST</Text>
+                <Text style={styles.title}>Component Test</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.scroll}>
-                <Text style={styles.label}>LOTTIE_ASSET_VERIFICATION</Text>
+                <Text style={styles.label}>ANIMATION PREVIEW</Text>
                 <View style={styles.lottiePreview}>
                     <AstraLottie type={testType} size={250} />
                     <Text style={styles.lottieType}>{testType.toUpperCase()}</Text>
@@ -46,14 +66,14 @@ export default function TestLottieScreen({ navigation }) {
                     ))}
                 </View>
 
-                <Text style={styles.label}>WEATHER_FALLBACK_VERIFICATION</Text>
+                <Text style={styles.label}>WEATHER WIDGET TEST</Text>
                 <WeatherWidget />
                 <Text style={styles.hint}>Verify timeout behavior by disabling network.</Text>
 
                 <View style={styles.auditBox}>
-                    <Text style={styles.label}>SECURITY_AUDIT: REDIRECT_SHELL</Text>
-                    <TouchableOpacity style={styles.ssBtn}>
-                        <Text style={styles.ssText}>SIMULATE_SSO_HANDSHAKE</Text>
+                    <Text style={styles.label}>LOCAL NOTIFICATION TEST</Text>
+                    <TouchableOpacity style={styles.ssBtn} onPress={triggerNotification}>
+                        <Text style={styles.ssText}>Trigger Notification</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

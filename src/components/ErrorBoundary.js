@@ -21,14 +21,14 @@ class ErrorBoundary extends React.Component {
             return (
                 <View style={styles.container}>
                     <Ionicons name="alert-circle" size={80} color="#ff3d71" />
-                    <Text style={styles.title}>KERNEL_PANIC</Text>
-                    <Text style={styles.subtitle}>A critical UI exception was intercepted.</Text>
+                    <Text style={styles.title}>Something Went Wrong</Text>
+                    <Text style={styles.subtitle}>The app ran into an unexpected error.</Text>
                     <Text style={styles.errorText}>{this.state.error?.toString()}</Text>
                     <TouchableOpacity 
                         style={styles.btn} 
                         onPress={() => this.setState({ hasError: false })}
                     >
-                        <Text style={styles.btnText}>ATTEMPT_RECOVERY</Text>
+                        <Text style={styles.btnText}>Try Again</Text>
                     </TouchableOpacity>
                 </View>
             );

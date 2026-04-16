@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { 
     View, 
     Text, 
@@ -39,7 +39,7 @@ export default function FeedbackScreen({ navigation }) {
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async () => {
-        if (!message.trim()) return Alert.alert('DATA_VOID', 'No signal detected in message field.');
+        if (!message.trim()) return Alert.alert('Empty Message', 'Please write something before sending.');
         setLoading(true);
         try {
             const token = await SecureStore.getItemAsync('token');
@@ -49,12 +49,14 @@ export default function FeedbackScreen({ navigation }) {
                 body: JSON.stringify({ type, message })
             });
             if (res.ok && res.data) {
-                Alert.alert('TRANSMITTED', 'Feedback received by deep-core processing.');
+                Alert.alert('Sent!', 'Thank you for your feedback.');
                 navigation.goBack();
             } else {
-                Alert.alert('TRANSMIT_ERROR', res.data?.error || 'Direct channel handshake failed.');
+                Alert.alert('Error', res.data?.error || 'Could not send your feedback.');
             }
-        } catch (e) {}
+        } catch (e) {
+            Alert.alert('Connection Error', 'Could not send feedback. Please check your connection.');
+        }
         setLoading(false);
     };
 
@@ -68,12 +70,12 @@ export default function FeedbackScreen({ navigation }) {
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                         <Ionicons name="chevron-back" size={24} color="#fff" />
                     </TouchableOpacity>
-                    <Text style={styles.title}>CORE_FEEDBACK</Text>
-                    <Text style={styles.sub}>DIRECT_CHANNEL_TO_CORE_v2.0</Text>
+                    <Text style={styles.title}>Feedback</Text>
+                    <Text style={styles.sub}>Share your thoughts with us</Text>
                 </View>
 
                 <View style={styles.form}>
-                    <Text style={styles.fieldLab}>SELECT_STREAM_TYPE</Text>
+                    <Text style={styles.fieldLab}>SELECT TYPE</Text>
                     <View style={styles.typeRow}>
                         {['bug', 'feature', 'general'].map(t => (
                             <TouchableOpacity 
@@ -86,11 +88,11 @@ export default function FeedbackScreen({ navigation }) {
                         ))}
                     </View>
 
-                    <Text style={[styles.fieldLab, { marginTop: 30 }]}>SIGNAL_CONTENT</Text>
+                    <Text style={[styles.fieldLab, { marginTop: 30 }]}>YOUR MESSAGE</Text>
                     <View blurType="dark" blurAmount={10} style={styles.inputGlass}>
                         <TextInput
                             style={styles.input}
-                            placeholder="INPUT_LOG_DETAIL..."
+                            placeholder="Describe your feedback here..."
                             placeholderTextColor="rgba(255,255,255,0.1)"
                             multiline
                             numberOfLines={8}
@@ -101,13 +103,13 @@ export default function FeedbackScreen({ navigation }) {
 
                     <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={loading}>
                         <LinearGradient colors={[colors.neonBlue, colors.neonPurple]} style={styles.submitGrad}>
-                            {loading ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.submitText}>TRANSMIT_SIGNAL</Text>}
+                            {loading ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.submitText}>SEND FEEDBACK</Text>}
                         </LinearGradient>
                     </TouchableOpacity>
 
                     <View style={styles.securityHub}>
                         <Ionicons name="shield-checkmark" size={16} color={colors.neonGreen} />
-                        <Text style={styles.securityText}>ENCRYPTED_FEEDBACK_SYNC_ACTIVE</Text>
+                        <Text style={styles.securityText}>Your feedback is secure</Text>
                     </View>
                 </View>
             </ScrollView>

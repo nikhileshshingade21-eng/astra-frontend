@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -152,7 +152,9 @@ export default function AnnouncementsScreen() {
             if (res.ok && res.data) {
                 setAnnouncements(res.data.data || []);
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[Announcements] Fetch error:', e.message);
+        }
     };
 
     const fetchNotifications = async () => {
@@ -164,11 +166,13 @@ export default function AnnouncementsScreen() {
             if (res.ok && res.data) {
                 setNotifications(res.data.notifications || []);
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[Notifications] Fetch error:', e.message);
+        }
     };
 
     const handleCreate = async () => {
-        if (!newTitle || !newContent) return Alert.alert('DATA_VOID', 'All sectors must be populated.');
+        if (!newTitle || !newContent) return Alert.alert('Missing Info', 'Please fill in all fields.');
         try {
             const token = await SecureStore.getItemAsync('token');
             const res = await fetchWithTimeout(`/api/announcements`, {
@@ -177,7 +181,7 @@ export default function AnnouncementsScreen() {
                 body: JSON.stringify({ title: newTitle, content: newContent, category: newCategory, image_url: newImageUrl })
             });
             if (res.ok) {
-                Alert.alert('DEPLOYED', 'Announcement broadcast successful.');
+                Alert.alert('Posted!', 'Announcement published successfully.');
                 setModalVisible(false);
                 setNewTitle('');
                 setNewContent('');
@@ -185,7 +189,7 @@ export default function AnnouncementsScreen() {
                 fetchAnnouncements();
             }
         } catch (error) {
-            Alert.alert('LINK_FAILURE', 'Broadcast node unreachable.');
+            Alert.alert('Error', 'Could not post announcement.');
         }
     };
 
@@ -197,15 +201,17 @@ export default function AnnouncementsScreen() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n));
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[Notifications] Mark read error:', e.message);
+        }
     };
 
     const getCatColors = (cat) => {
         switch (cat) {
-            case 'Exam': return { main: colors.hot, glass: colors.hot + '15', label: 'CRITICAL_INTEL' };
-            case 'Holiday': return { main: colors.neonBlue, glass: colors.neonBlue + '15', label: 'SYSTEM_REST' };
-            case 'Event': return { main: colors.neonPurple, glass: colors.neonPurple + '15', label: 'ASTRA_SYNC' };
-            default: return { main: colors.neonGreen, glass: colors.neonGreen + '15', label: 'GENERAL_DATA' };
+            case 'Exam': return { main: colors.hot, glass: colors.hot + '15', label: 'EXAM' };
+            case 'Holiday': return { main: colors.neonBlue, glass: colors.neonBlue + '15', label: 'HOLIDAY' };
+            case 'Event': return { main: colors.neonPurple, glass: colors.neonPurple + '15', label: 'EVENT' };
+            default: return { main: colors.neonGreen, glass: colors.neonGreen + '15', label: 'GENERAL' };
         }
     };
 
@@ -235,7 +241,7 @@ export default function AnnouncementsScreen() {
                                 </View>
                                 <View>
                                     <Text style={[styles.catLabel, { color: theme.main }]}>{theme.label}</Text>
-                                    <DecodingText text={(item.title || 'BROADCAST').toUpperCase()} style={styles.cardTitle} />
+                                    <DecodingText text={(item.title || 'Announcement').toUpperCase()} style={styles.cardTitle} />
                                 </View>
                             </View>
                             <Text style={styles.dateBadge}>{new Date(item.created_at).toLocaleDateString([], { month: 'short', day: '2-digit' }).toUpperCase()}</Text>
@@ -248,7 +254,7 @@ export default function AnnouncementsScreen() {
                                 {item.image_url.toLowerCase().endsWith('.pdf') ? (
                                     <View style={styles.pdfPlaceholder}>
                                         <Ionicons name="document-text" size={32} color={theme.main} />
-                                        <Text style={[styles.pdfText, { color: theme.main }]}>PDF_ATTACHED</Text>
+                                        <Text style={[styles.pdfText, { color: theme.main }]}>PDF Attached</Text>
                                     </View>
                                 ) : (
                                     <Image source={{ uri: item.image_url }} style={styles.cardImage} resizeMode="cover" />
@@ -260,7 +266,7 @@ export default function AnnouncementsScreen() {
                         <View style={styles.cardFooter}>
                             <View style={styles.authorTag}>
                                 <Ionicons name="finger-print" size={10} color={colors.textDim} />
-                                <Text style={styles.authorText}>NODE_{item.author?.slice(0,5) || 'F_VEC9'}</Text>
+                                <Text style={styles.authorText}>{item.author?.slice(0,8) || 'Faculty'}</Text>
                             </View>
                             <View style={[styles.bracket, styles.br]} />
                         </View>
@@ -323,9 +329,9 @@ export default function AnnouncementsScreen() {
                             <Animated.View style={[styles.pulseCircle, pulseStyle]} />
                             <View style={styles.pulseDot} />
                         </View>
-                        <Text style={styles.statusText}>INSTITUTIONAL_CORE_HUB // ONLINE</Text>
+                        <Text style={styles.statusText}>ASTRA ANNOUNCEMENTS • ONLINE</Text>
                     </View>
-                    <DecodingText text="HUB_ANNEX_v3.0" style={styles.headerTitle} />
+                    <DecodingText text="Announcements" style={styles.headerTitle} />
                 </View>
                 {(userRole === 'faculty' || userRole === 'admin') && (
                     <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
@@ -345,7 +351,7 @@ export default function AnnouncementsScreen() {
                             setMode('broadcasts');
                         }}
                     >
-                        <Text style={[styles.navText, mode === 'broadcasts' && { color: colors.neonBlue }]}>BROADCASTS</Text>
+                        <Text style={[styles.navText, mode === 'broadcasts' && { color: colors.neonBlue }]}>ANNOUNCEMENTS</Text>
                         {mode === 'broadcasts' && <Animated.View entering={FadeInRight} style={styles.navActiveLine} />}
                     </TouchableOpacity>
                     <TouchableOpacity 
@@ -355,7 +361,7 @@ export default function AnnouncementsScreen() {
                             setMode('activity');
                         }}
                     >
-                        <Text style={[styles.navText, mode === 'activity' && { color: colors.neonBlue }]}>ACTIVITY_LOG</Text>
+                        <Text style={[styles.navText, mode === 'activity' && { color: colors.neonBlue }]}>NOTIFICATIONS</Text>
                         {mode === 'activity' && <Animated.View entering={FadeInRight} style={styles.navActiveLine} />}
                     </TouchableOpacity>
                 </View>
@@ -373,8 +379,8 @@ export default function AnnouncementsScreen() {
                         <View style={styles.emptyCircle}>
                             <Ionicons name="radio-outline" size={40} color={colors.textDim} />
                         </View>
-                        <Text style={styles.emptyText}>NO_ACTIVE_STREAMS</Text>
-                        <Text style={styles.emptySub}>AWAITING_INSTITUTIONAL_HANDSHAKE</Text>
+                        <Text style={styles.emptyText}>No Announcements Yet</Text>
+                        <Text style={styles.emptySub}>Check back later for updates</Text>
                     </View>
                 }
             />
@@ -410,8 +416,8 @@ export default function AnnouncementsScreen() {
                                 
                                 <View style={styles.detailFooter}>
                                     <View style={styles.footerItem}>
-                                        <Text style={styles.footerLab}>SOURCE_NODE</Text>
-                                        <Text style={styles.footerVal}>{selectedItem.author || 'FACULTY_VEC_9'}</Text>
+                                        <Text style={styles.footerLab}>POSTED BY</Text>
+                                        <Text style={styles.footerVal}>{selectedItem.author || 'Faculty'}</Text>
                                     </View>
                                     <View style={styles.footerItem}>
                                         <Text style={styles.footerLab}>TIMESTAMP</Text>
@@ -430,7 +436,7 @@ export default function AnnouncementsScreen() {
                     <View blurType="dark" blurAmount={20} style={StyleSheet.absoluteFill} />
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>BROADCAST_INITIATE</Text>
+                            <Text style={styles.modalTitle}>New Announcement</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalClose}>
                                 <Ionicons name="close" size={24} color="#fff" />
                             </TouchableOpacity>
@@ -438,7 +444,7 @@ export default function AnnouncementsScreen() {
                         
                         <ScrollView showsVerticalScrollIndicator={false}>
                             <View style={styles.inputGroup}>
-                                <Text style={styles.inputLab}>TITLE_IDENTIFIER</Text>
+                                <Text style={styles.inputLab}>TITLE</Text>
                                 <TextInput 
                                     style={styles.input} 
                                     placeholder="Enter subject identifier..."
@@ -449,7 +455,7 @@ export default function AnnouncementsScreen() {
                             </View>
 
                             <View style={styles.inputGroup}>
-                                <Text style={styles.inputLab}>DATA_PAYLOAD</Text>
+                                <Text style={styles.inputLab}>MESSAGE</Text>
                                 <TextInput 
                                     style={[styles.input, styles.textArea]} 
                                     placeholder="Input message content..."
@@ -462,7 +468,7 @@ export default function AnnouncementsScreen() {
                             </View>
 
                             <View style={styles.inputGroup}>
-                                <Text style={styles.inputLab}>MEDIA_ATTACHMENT_URL</Text>
+                                <Text style={styles.inputLab}>IMAGE URL (Optional)</Text>
                                 <TextInput 
                                     style={styles.input} 
                                     placeholder="Enter image URL (CDN/Institutional Storage)..."
@@ -472,7 +478,7 @@ export default function AnnouncementsScreen() {
                                 />
                             </View>
 
-                            <Text style={styles.inputLab}>CLASSIFICATION_STAMP</Text>
+                            <Text style={styles.inputLab}>CATEGORY</Text>
                             <View style={styles.catGrid}>
                                 {['General', 'Exam', 'Holiday', 'Event'].map(cat => (
                                     <TouchableOpacity 
@@ -487,7 +493,7 @@ export default function AnnouncementsScreen() {
 
                             <TouchableOpacity style={styles.executeBtn} onPress={handleCreate}>
                                 <LinearGradient colors={[colors.neonBlue, colors.neonPurple]} style={styles.executeGrad}>
-                                    <Text style={styles.executeText}>EXECUTE_BROADCAST</Text>
+                                    <Text style={styles.executeText}>POST ANNOUNCEMENT</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
                         </ScrollView>

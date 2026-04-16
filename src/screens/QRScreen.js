@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -77,9 +77,9 @@ export default function QRScreen({ route, navigation }) {
             if (scanned || codes.length === 0) return;
             setScanned(true);
             const data = codes[0].value;
-            Alert.alert('DECRYPTED_NODE', `DATA_FEED: ${data.substring(0, 20)}...`, [
+            Alert.alert('QR Scanned', `Data: ${data.substring(0, 20)}...`, [
                 {
-                    text: 'PROCESS', onPress: () => {
+                    text: 'OK', onPress: () => {
                         setScanned(false);
                     }
                 }
@@ -106,8 +106,8 @@ export default function QRScreen({ route, navigation }) {
                     <Ionicons name="chevron-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>IDENTITY_VAULT</Text>
-                    <Text style={[styles.sub, { color: roleColor }]}>ENCRYPTED_HANDSHAKE_NODE</Text>
+                    <Text style={styles.title}>My QR Code</Text>
+                    <Text style={[styles.sub, { color: roleColor }]}>Your Identity Pass</Text>
                 </View>
             </View>
 
@@ -117,7 +117,7 @@ export default function QRScreen({ route, navigation }) {
                         style={[styles.tab, mode === 'generate' && { backgroundColor: roleColor + '20' }]}
                         onPress={() => setMode('generate')}
                     >
-                        <Text style={[styles.tabText, mode === 'generate' && { color: roleColor }]}>GENERATE_PASS</Text>
+                        <Text style={[styles.tabText, mode === 'generate' && { color: roleColor }]}>MY QR CODE</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.tab, mode === 'scan' && { backgroundColor: roleColor + '20' }]}
@@ -126,7 +126,7 @@ export default function QRScreen({ route, navigation }) {
                             setMode('scan');
                         }}
                     >
-                        <Text style={[styles.tabText, mode === 'scan' && { color: roleColor }]}>SCAN_OPTICS</Text>
+                        <Text style={[styles.tabText, mode === 'scan' && { color: roleColor }]}>SCAN QR</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -135,7 +135,7 @@ export default function QRScreen({ route, navigation }) {
                 {mode === 'generate' ? (
                     <View style={styles.qrDisplay}>
                         <View blurType="dark" blurAmount={10} style={[styles.qrVaultCard, { borderColor: roleColor + '40' }]}>
-                            <Text style={[styles.vaultTitle, { color: roleColor }]}>IDENTITY_BREADCRUMB_v2.0</Text>
+                            <Text style={[styles.vaultTitle, { color: roleColor }]}>YOUR IDENTITY PASS</Text>
                             <View style={styles.qrShadowBox}>
                                 <View style={styles.qrInner}>
                                     <QRCode
@@ -150,7 +150,7 @@ export default function QRScreen({ route, navigation }) {
                             </View>
                             <View style={styles.vaultFooter}>
                                 <Ionicons name="shield-checkmark" size={14} color={colors.neonGreen} />
-                                <Text style={styles.vaultFooterText}>NODE_{user.roll_number || user.id} • ACTIVE</Text>
+                                <Text style={styles.vaultFooterText}>{user.roll_number || user.id} • Active</Text>
                             </View>
                         </View>
                     </View>
@@ -159,7 +159,7 @@ export default function QRScreen({ route, navigation }) {
                         {!hasPermission ? (
                             <TouchableOpacity style={styles.permBtn} onPress={requestPermission}>
                                 <LinearGradient colors={[roleColor, '#000']} style={styles.permGrad}>
-                                    <Text style={styles.permText}>INITIALIZE_OPTICS</Text>
+                                    <Text style={styles.permText}>ALLOW CAMERA</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
                         ) : (
@@ -181,16 +181,16 @@ export default function QRScreen({ route, navigation }) {
                                 </View>
                             </View>
                         )}
-                        <Text style={styles.displayHint}>ALIGN_NODE_WITHIN_FIELD_OF_VIEW</Text>
+                        <Text style={styles.displayHint}>Point camera at the QR code</Text>
                     </View>
                 )}
 
                 <View style={styles.protocolHub}>
-                    <Text style={styles.protocolTitle}>FALLBACK_PROTOCOLS</Text>
+                    <Text style={styles.protocolTitle}>HELPFUL INFO</Text>
                     <View blurType="dark" blurAmount={3} style={styles.protocolCard}>
-                        <PROTOCOL_ITEM icon="wifi-outline" label="UNSTABLE_SAT_LINK" val="USE_VAULT" color={colors.neonBlue} />
-                        <PROTOCOL_ITEM icon="sync-outline" label="OFFLINE_SYNC_MODE" val="ENABLED" color={colors.neonPurple} />
-                        <PROTOCOL_ITEM icon="finger-print-outline" label="VERIFIED_IDENTITY" val="REQUIRED" color={colors.neonGreen} />
+                        <PROTOCOL_ITEM icon="wifi-outline" label="No Internet?" val="Use QR Code" color={colors.neonBlue} />
+                        <PROTOCOL_ITEM icon="sync-outline" label="Offline Mode" val="Available" color={colors.neonPurple} />
+                        <PROTOCOL_ITEM icon="finger-print-outline" label="Identity Check" val="Required" color={colors.neonGreen} />
                     </View>
                 </View>
             </ScrollView>

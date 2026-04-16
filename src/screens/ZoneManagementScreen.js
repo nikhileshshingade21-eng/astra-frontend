@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -78,7 +78,7 @@ export default function ZoneManagementScreen({ navigation }) {
                 })));
             }
         } catch (error) {
-            Alert.alert("LINK_FAILURE", "Satellite link to Geo-Hub lost.");
+            Alert.alert("Connection Error", "Could not load campus zones.");
         } finally {
             setLoading(false);
         }
@@ -86,7 +86,7 @@ export default function ZoneManagementScreen({ navigation }) {
 
     const addZone = async () => {
         if (!newZone.name || !newZone.lat || !newZone.lng || !newZone.radius) {
-            return Alert.alert('DATA_VOID', 'Incomplete coordinates detected.');
+            return Alert.alert('Missing Info', 'Please fill in all zone details.');
         }
         try {
                         const token = await SecureStore.getItemAsync('token');
@@ -105,10 +105,10 @@ export default function ZoneManagementScreen({ navigation }) {
                 setIsAddingZone(false);
                 fetchZones();
             } else {
-                Alert.alert("REGISTRY_ERROR", res.data?.error || "Failed to commit geofence to memory.");
+                Alert.alert("Error", res.data?.error || "Could not save zone.");
             }
         } catch (error) {
-            Alert.alert("REGISTRY_ERROR", "Failed to commit geofence to memory.");
+            Alert.alert("Error", "Could not save zone.");
         }
     };
 
@@ -124,15 +124,15 @@ export default function ZoneManagementScreen({ navigation }) {
             if (!res.ok) throw new Error('Toggle failed');
         } catch (error) {
             setZones(prev => prev.map(z => z.id === id ? { ...z, active: currentStatus } : z));
-            Alert.alert("OVERRIDE_FAILED", "Central core rejected zone status update.");
+            Alert.alert("Error", "Could not update zone status.");
         }
     };
 
     const deleteZone = (id) => {
-        Alert.alert('⚠️ DECOMMISSION', 'Permanently purge this geofence from the registry?', [
-            { text: 'ABORT', style: 'cancel' },
+        Alert.alert('Delete Zone', 'Are you sure you want to delete this zone?', [
+            { text: 'Cancel', style: 'cancel' },
             {
-                text: 'PURGE',
+                text: 'Delete',
                 style: 'destructive',
                 onPress: async () => {
                     try {
@@ -146,7 +146,7 @@ export default function ZoneManagementScreen({ navigation }) {
                             setZones(prev => prev.filter(z => z.id !== id));
                         }
                     } catch (error) {
-                        Alert.alert("PURGE_FAILURE", "Could not remove sector from core.");
+                        Alert.alert("Error", "Could not delete zone.");
                     }
                 }
             }
@@ -171,7 +171,7 @@ export default function ZoneManagementScreen({ navigation }) {
                     <View style={[styles.statusBadge, { backgroundColor: item.active ? colors.neonGreen + '20' : colors.hot + '20' }]}>
                         <View style={[styles.statusDot, { backgroundColor: item.active ? colors.neonGreen : colors.hot }]} />
                         <Text style={[styles.statusText, { color: item.active ? colors.neonGreen : colors.hot }]}>
-                            {item.active ? 'NOMINAL' : 'OFFLINE'}
+                            {item.active ? 'ACTIVE' : 'INACTIVE'}
                         </Text>
                     </View>
                 </View>
@@ -181,11 +181,11 @@ export default function ZoneManagementScreen({ navigation }) {
                 <View style={styles.cardFooter}>
                     <View style={styles.footerInfo}>
                         <View style={styles.footerItem}>
-                            <Text style={styles.footerLab}>RAD_M</Text>
+                            <Text style={styles.footerLab}>RADIUS</Text>
                             <Text style={styles.footerVal}>{item.radius}</Text>
                         </View>
                         <View style={styles.footerItem}>
-                            <Text style={styles.footerLab}>SECTOR_ID</Text>
+                            <Text style={styles.footerLab}>ZONE ID</Text>
                             <Text style={styles.footerVal}>#{item.id}</Text>
                         </View>
                     </View>
@@ -219,8 +219,8 @@ export default function ZoneManagementScreen({ navigation }) {
                     <Ionicons name="chevron-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>GEO_MANAGEMENT</Text>
-                    <Text style={styles.sub}>TACTICAL_PERIMETER_SYSTEM_v2.0</Text>
+                    <Text style={styles.title}>Campus Zones</Text>
+                    <Text style={styles.sub}>Manage location areas</Text>
                 </View>
             </View>
 
@@ -239,7 +239,7 @@ export default function ZoneManagementScreen({ navigation }) {
                     <View blurType="dark" blurAmount={5} style={[styles.formBtn, isAddingZone && { borderColor: colors.neonPink }]}>
                         <Ionicons name={isAddingZone ? "close" : "add"} size={22} color={isAddingZone ? colors.neonPink : colors.neonBlue} />
                         <Text style={[styles.formBtnText, { color: isAddingZone ? colors.neonPink : colors.neonBlue }]}>
-                            {isAddingZone ? "ABORT_INITIALIZATION" : "INITIATE_NEW_SECTOR"}
+                            {isAddingZone ? "Cancel" : "Add New Zone"}
                         </Text>
                     </View>
                 </TouchableOpacity>
@@ -248,17 +248,17 @@ export default function ZoneManagementScreen({ navigation }) {
                     <View style={styles.form}>
                         <View style={styles.formRow}>
                             <View style={{ flex: 2 }}>
-                                <Text style={styles.inputLab}>SECTOR_NAME</Text>
+                                <Text style={styles.inputLab}>ZONE NAME</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="IDENTIFIER..."
+                                    placeholder="Name..."
                                     placeholderTextColor="rgba(255,255,255,0.1)"
                                     value={newZone.name}
                                     onChangeText={t => setNewZone({...newZone, name: t})}
                                 />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.inputLab}>RAD_M</Text>
+                                <Text style={styles.inputLab}>RADIUS (m)</Text>
                                 <TextInput
                                     style={styles.input}
                                     placeholder="METERS..."
@@ -271,7 +271,7 @@ export default function ZoneManagementScreen({ navigation }) {
                         </View>
                         <View style={styles.formRow}>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.inputLab}>LAT_COORD</Text>
+                                <Text style={styles.inputLab}>LATITUDE</Text>
                                 <TextInput
                                     style={styles.input}
                                     placeholder="X.XXXX..."
@@ -282,7 +282,7 @@ export default function ZoneManagementScreen({ navigation }) {
                                 />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.inputLab}>LNG_COORD</Text>
+                                <Text style={styles.inputLab}>LONGITUDE</Text>
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Y.YYYY..."
@@ -295,7 +295,7 @@ export default function ZoneManagementScreen({ navigation }) {
                         </View>
                         <TouchableOpacity style={styles.deployBtn} onPress={addZone}>
                             <LinearGradient colors={[colors.neonBlue, colors.neonPurple]} style={styles.deployGrad}>
-                                <Text style={styles.deployText}>DEPLOY_GEOFENCE</Text>
+                                <Text style={styles.deployText}>SAVE ZONE</Text>
                             </LinearGradient>
                         </TouchableOpacity>
                     </View>
@@ -310,7 +310,7 @@ export default function ZoneManagementScreen({ navigation }) {
                         !loading && (
                             <View style={styles.empty}>
                                 <Ionicons name="map-outline" size={48} color={colors.textDim} />
-                                <Text style={styles.emptyText}>NO_ACTIVE_PERIMETERS</Text>
+                                <Text style={styles.emptyText}>No zones added yet</Text>
                             </View>
                         )
                     }
@@ -319,7 +319,7 @@ export default function ZoneManagementScreen({ navigation }) {
 
             <View blurType="dark" blurAmount={3} style={styles.footer}>
                 <View style={styles.pulseDot} />
-                <Text style={styles.footerText}>ENCRYPTED_GEO_LINK_STABLE</Text>
+                <Text style={styles.footerText}>Location services active</Text>
             </View>
         </View>
     );

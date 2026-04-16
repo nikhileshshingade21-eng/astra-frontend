@@ -1,4 +1,4 @@
-export const API_BASE = 'https://astra-backend-production-e996.up.railway.app';
+export const API_BASE = 'https://astra-backend-production-a16d.up.railway.app';
 
 export const getTenantConfig = async () => {
     try {

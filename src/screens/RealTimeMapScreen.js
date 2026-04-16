@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     View,
     Text,
@@ -97,7 +97,9 @@ const RealTimeMapScreen = ({ navigation }) => {
             if (res.ok && res.data) {
                 setRealtimeData(res.data);
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[Map] Realtime fetch error:', e.message);
+        }
     };
 
     useEffect(() => {
@@ -116,8 +118,8 @@ const RealTimeMapScreen = ({ navigation }) => {
                     <Ionicons name="chevron-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>SPATIAL_SYNC</Text>
-                    <Text style={styles.sub}>REAL-TIME CAMPUS TOPOLOGY</Text>
+                    <Text style={styles.title}>Live Map</Text>
+                    <Text style={styles.sub}>REAL-TIME CAMPUS VIEW</Text>
                 </View>
                 <TouchableOpacity onPress={fetchRealtime} style={styles.refreshBtn}>
                     <Ionicons name="scan" size={20} color={colors.perfect} />
@@ -128,24 +130,24 @@ const RealTimeMapScreen = ({ navigation }) => {
                 <View style={styles.statsStrip}>
                     <View blurType="dark" blurAmount={3} style={styles.statChip}>
                         <Text style={styles.chipVal}>{STUDENTS.length}</Text>
-                        <Text style={styles.chipLab}>CONNECTED</Text>
+                        <Text style={styles.chipLab}>TOTAL</Text>
                     </View>
                     <View blurType="dark" blurAmount={3} style={styles.statChip}>
                         <Text style={[styles.chipVal, { color: colors.present }]}>34</Text>
-                        <Text style={styles.chipLab}>ACTIVE_ZONE</Text>
+                        <Text style={styles.chipLab}>IN CAMPUS</Text>
                     </View>
                     <View blurType="dark" blurAmount={3} style={styles.statChip}>
                         <Text style={[styles.chipVal, { color: colors.atRisk }]}>02</Text>
-                        <Text style={styles.chipLab}>FINGERED</Text>
+                        <Text style={styles.chipLab}>FLAGGED</Text>
                     </View>
                 </View>
 
                 <View style={styles.mapFrame}>
                     <View style={styles.mapHeader}>
-                        <Text style={styles.mapTitle}>SECTOR_A // CLASSROOM_301</Text>
+                        <Text style={styles.mapTitle}>Main Building — Room 301</Text>
                         <View style={styles.liveTag}>
                             <View style={styles.liveDot} />
-                            <Text style={styles.liveText}>STREAMING</Text>
+                            <Text style={styles.liveText}>LIVE</Text>
                         </View>
                     </View>
 
@@ -170,8 +172,8 @@ const RealTimeMapScreen = ({ navigation }) => {
                             />
                         ))}
 
-                        <Text style={styles.zoneMarker}>NORTH_GATE</Text>
-                        <Text style={[styles.zoneMarker, { bottom: 10, right: 10 }]}>SOUTH_BYPASS</Text>
+                        <Text style={styles.zoneMarker}>North Gate</Text>
+                        <Text style={[styles.zoneMarker, { bottom: 10, right: 10 }]}>South Exit</Text>
                     </View>
                 </View>
 
@@ -184,7 +186,7 @@ const RealTimeMapScreen = ({ navigation }) => {
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.nodeName}>{selectedStudent.name.toUpperCase()}</Text>
-                                <Text style={styles.nodeId}>{selectedStudent.id} • SEC_{selectedStudent.section}</Text>
+                                <Text style={styles.nodeId}>{selectedStudent.id} • {selectedStudent.section}</Text>
                             </View>
                             <TouchableOpacity onPress={() => setSelectedStudent(null)} style={styles.closeNode}>
                                 <Ionicons name="close-circle" size={24} color={colors.textDim} />
@@ -192,11 +194,11 @@ const RealTimeMapScreen = ({ navigation }) => {
                         </View>
                         <View style={styles.nodeStats}>
                             <View style={styles.nodeStat}>
-                                <Text style={styles.nodeStatLab}>PRESENCE_%</Text>
+                                <Text style={styles.nodeStatLab}>ATTENDANCE</Text>
                                 <Text style={styles.nodeStatVal}>{selectedStudent.att}%</Text>
                             </View>
                             <View style={styles.nodeStat}>
-                                <Text style={styles.nodeStatLab}>LAST_SIGNAL</Text>
+                                <Text style={styles.nodeStatLab}>LAST SEEN</Text>
                                 <Text style={styles.nodeStatVal}>182s AGO</Text>
                             </View>
                             <View style={styles.nodeStat}>
@@ -207,23 +209,23 @@ const RealTimeMapScreen = ({ navigation }) => {
                     </View>
                 ) : (
                     <View blurType="dark" blurAmount={3} style={styles.legendBox}>
-                        <Text style={styles.legendTitle}>SPATIAL_LEGEND</Text>
+                        <Text style={styles.legendTitle}>STATUS LEGEND</Text>
                         <View style={styles.legendGrid}>
                             <View style={styles.legItem}>
                                 <View style={[styles.legDot, { backgroundColor: colors.perfect }]} />
-                                <Text style={styles.legLab}>PLATINUM</Text>
+                                <Text style={styles.legLab}>EXCELLENT</Text>
                             </View>
                             <View style={styles.legItem}>
                                 <View style={[styles.legDot, { backgroundColor: colors.present }]} />
-                                <Text style={styles.legLab}>AUTHORIZED</Text>
+                                <Text style={styles.legLab}>PRESENT</Text>
                             </View>
                             <View style={styles.legItem}>
                                 <View style={[styles.legDot, { backgroundColor: colors.atRisk }]} />
-                                <Text style={styles.legLab}>THREAT</Text>
+                                <Text style={styles.legLab}>AT RISK</Text>
                             </View>
                             <View style={styles.legItem}>
                                 <View style={[styles.legDot, { backgroundColor: colors.late }]} />
-                                <Text style={styles.legLab}>DELAYED</Text>
+                                <Text style={styles.legLab}>LATE</Text>
                             </View>
                         </View>
                     </View>

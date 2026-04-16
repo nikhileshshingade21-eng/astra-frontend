@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -11,7 +11,8 @@ import {
     LayoutAnimation,
     Platform,
     UIManager,
-    Dimensions
+    Dimensions,
+    StatusBar
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 // import { BlurView } from '@react-native-community/blur';
@@ -46,32 +47,45 @@ export default function TrackerScreen({ route, navigation }) {
     const [trailData, setTrailData] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const searchStudent = async () => {
+    const searchStudent = async (silent = false) => {
         if (!searchQuery) return;
-        setLoading(true);
+        if (!silent) setLoading(true);
         try {
             const token = await SecureStore.getItemAsync('token');
             const res = await fetchWithTimeout(`/api/admin/tracker/${searchQuery}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok && res.data) {
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                if (!silent) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setSelectedStudent({
                     name: (res.data.user?.name || 'Unknown Node').toUpperCase(),
                     roll: res.data.user?.roll_number || 'N/A',
                     attendance: res.data.attendance_pct || 0
                 });
                 setTrailData(res.data.trail || []);
-            } else {
-                Alert.alert('SYSTEM_ERROR', res.data?.error || 'Identity not found in logs.');
+            } else if (!silent) {
+                Alert.alert('Not Found', res.data?.error || 'Student not found.');
                 setSelectedStudent(null);
             }
         } catch (e) {
-            Alert.alert('LINK_FAILURE', 'Could not establish connection to Campus Hub.');
+            if (!silent) Alert.alert('Connection Error', 'Could not reach the server.');
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     };
+
+    // Real-time synchronization
+    React.useEffect(() => {
+        let interval;
+        if (selectedStudent && searchQuery) {
+            interval = setInterval(() => {
+                searchStudent(true);
+            }, 5000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [selectedStudent, searchQuery]);
 
     const getEventColor = (type) => {
         if (type.includes('Verified')) return colors.neonGreen;
@@ -90,8 +104,8 @@ export default function TrackerScreen({ route, navigation }) {
                     <Ionicons name="chevron-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>AUDIT_TRAIL</Text>
-                    <Text style={[styles.sub, { color: roleColor }]}>BEHAVIORAL_LOG_LEVEL_01</Text>
+                    <Text style={styles.title}>Activity Log</Text>
+                    <Text style={[styles.sub, { color: roleColor }]}>Student Movement Tracker</Text>
                 </View>
             </View>
 
@@ -99,7 +113,7 @@ export default function TrackerScreen({ route, navigation }) {
                 <View blurType="dark" blurAmount={3} style={[styles.searchBox, { borderColor: roleColor + '40' }]}>
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="INPUT_IDENTITY_NODE..."
+                        placeholder="Enter roll number..."
                         placeholderTextColor="rgba(255,255,255,0.2)"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
@@ -113,7 +127,7 @@ export default function TrackerScreen({ route, navigation }) {
             {loading ? (
                 <View style={styles.loadingBox}>
                     <ActivityIndicator size="large" color={roleColor} />
-                    <Text style={[styles.loadingText, { color: roleColor }]}>DECRYPTING_SECURE_LOGS...</Text>
+                    <Text style={[styles.loadingText, { color: roleColor }]}>Loading records...</Text>
                 </View>
             ) : selectedStudent ? (
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -128,7 +142,7 @@ export default function TrackerScreen({ route, navigation }) {
                             </View>
                         </View>
                         <View style={[styles.divider, { backgroundColor: roleColor + '20' }]} />
-                        <Text style={styles.trailLabel}>CHRONOLOGICAL_FLOW</Text>
+                        <Text style={styles.trailLabel}>ACTIVITY TIMELINE</Text>
                     </View>
 
                     <View style={styles.timeline}>
@@ -143,7 +157,7 @@ export default function TrackerScreen({ route, navigation }) {
                                     <Text style={styles.eventTime}>{event.time}</Text>
                                     <View blurType="dark" blurAmount={3} style={styles.eventCard}>
                                         <Text style={styles.eventActivity}>{event.activity.toUpperCase()}</Text>
-                                        <Text style={styles.eventMeta}>{event.class} • ROOM_{event.room}</Text>
+                                        <Text style={styles.eventMeta}>{event.class} • Room {event.room}</Text>
                                     </View>
                                 </View>
                             </View>
@@ -152,15 +166,15 @@ export default function TrackerScreen({ route, navigation }) {
 
                     <TouchableOpacity style={styles.intelBtn}>
                         <LinearGradient colors={[roleColor, '#000']} start={{x:0, y:0}} end={{x:2, y:2}} style={styles.intelGrad}>
-                            <Text style={styles.intelText}>GENERATE_INTELLIGENCE_REPORT</Text>
+                            <Text style={styles.intelText}>GENERATE REPORT</Text>
                         </LinearGradient>
                     </TouchableOpacity>
                 </ScrollView>
             ) : (
                 <View style={styles.emptyBox}>
                     <Ionicons name="finger-print-outline" size={80} color="rgba(255,255,255,0.05)" />
-                    <Text style={styles.emptyText}>Protocol Awaiting Input</Text>
-                    <Text style={styles.emptySub}>Enter a node ID to trace behavioral history</Text>
+                    <Text style={styles.emptyText}>Search for a Student</Text>
+                    <Text style={styles.emptySub}>Enter a roll number to see their activity history</Text>
                 </View>
             )}
         </View>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -40,7 +40,7 @@ const colors = {
 };
 
 export default function LeaveScreen({ route, navigation }) {
-    const { user } = route.params || { user: { name: 'OPERATOR' } };
+    const { user } = route.params || { user: { name: 'Student' } };
     const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -58,7 +58,9 @@ export default function LeaveScreen({ route, navigation }) {
             if (res.ok && res.data) {
                 setLeaves(res.data.leaves || []);
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[Leaves] Load error:', e.message);
+        }
         setLoading(false);
         setRefreshing(false);
     };
@@ -68,7 +70,7 @@ export default function LeaveScreen({ route, navigation }) {
     }, []);
 
     const submitLeave = async () => {
-        if(!startDate || !endDate) return Alert.alert('DATA_VOID', 'Sequence start/end required.');
+        if(!startDate || !endDate) return Alert.alert('Missing Dates', 'Please enter start and end dates.');
         setApplying(true);
         try {
             const token = await SecureStore.getItemAsync('token');
@@ -78,13 +80,15 @@ export default function LeaveScreen({ route, navigation }) {
                 body: JSON.stringify({ start_date: startDate, end_date: endDate, reason })
             });
             if(res.ok && res.data) {
-                Alert.alert('LOGGED', 'Absence protocol initiated.');
+                Alert.alert('Submitted', 'Your leave request has been sent.');
                 setStartDate(''); setEndDate(''); setReason('');
                 loadLeaves();
             } else {
-                Alert.alert('LINK_FAILURE', res.data?.error || 'Could not submit request.');
+                Alert.alert('Error', res.data?.error || 'Could not submit your request.');
             }
-        } catch (e) {}
+        } catch (e) {
+            Alert.alert('Connection Error', 'Could not submit your request. Please try again.');
+        }
         setApplying(false);
     };
 
@@ -98,37 +102,37 @@ export default function LeaveScreen({ route, navigation }) {
                     <Ionicons name="chevron-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>ABSENCE_PROTOCOLS</Text>
-                    <Text style={styles.sub}>LOG_SUBMISSION_PORTAL_v2.0</Text>
+                    <Text style={styles.title}>Leave Request</Text>
+                    <Text style={styles.sub}>Apply for absence</Text>
                 </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={loadLeaves} tintColor={colors.neonPurple} />} showsVerticalScrollIndicator={false}>
                 <View blurType="dark" blurAmount={10} style={styles.formCard}>
-                    <Text style={styles.formLab}>INITIALIZE_REQUEST</Text>
+                    <Text style={styles.formLab}>NEW REQUEST</Text>
                     <View style={styles.inputRow}>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.fieldLab}>START_SEQ</Text>
+                            <Text style={styles.fieldLab}>START DATE</Text>
                             <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="rgba(255,255,255,0.1)" value={startDate} onChangeText={setStartDate} />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.fieldLab}>END_SEQ</Text>
+                            <Text style={styles.fieldLab}>END DATE</Text>
                             <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="rgba(255,255,255,0.1)" value={endDate} onChangeText={setEndDate} />
                         </View>
                     </View>
                     <View style={{ marginTop: 15 }}>
-                        <Text style={styles.fieldLab}>REASON_LOG</Text>
-                        <TextInput style={[styles.input, styles.textArea]} placeholder="INPUT_JUSTIFICATION..." placeholderTextColor="rgba(255,255,255,0.1)" multiline value={reason} onChangeText={setReason} />
+                        <Text style={styles.fieldLab}>REASON</Text>
+                        <TextInput style={[styles.input, styles.textArea]} placeholder="Why are you applying for leave?" placeholderTextColor="rgba(255,255,255,0.1)" multiline value={reason} onChangeText={setReason} />
                     </View>
                     <TouchableOpacity style={styles.submitBtn} onPress={submitLeave} disabled={applying}>
                         <LinearGradient colors={[colors.neonPurple, colors.neonPink]} style={styles.submitGrad}>
-                            {applying ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.submitText}>COMMIT_REQUEST</Text>}
+                            {applying ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.submitText}>SUBMIT REQUEST</Text>}
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
 
                 <View style={styles.historySection}>
-                    <Text style={styles.secTitle}>SEQUENCE_HISTORY</Text>
+                    <Text style={styles.secTitle}>PAST REQUESTS</Text>
                     {leaves.map((l, i) => (
                         <Animated.View key={l.id} entering={FadeInUp.delay(i * 100)}>
                             <View blurType="dark" blurAmount={3} style={styles.leaveCard}>

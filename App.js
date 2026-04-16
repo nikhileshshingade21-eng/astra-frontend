@@ -2,8 +2,10 @@ import React from 'react';
 import { StyleSheet, Text, View, ActivityIndicator, StatusBar } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SecureStore from './src/utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { startAstraService, stopAstraService } from './src/services/foregroundService';
 
 import AuthScreen from './src/screens/AuthScreen';
 import RoleSelectionScreen from './src/screens/RoleSelectionScreen';
@@ -20,6 +22,10 @@ import MarketplaceScreen from './src/screens/MarketplaceScreen';
 import FeedbackScreen from './src/screens/FeedbackScreen';
 import OrchestrationScreen from './src/screens/OrchestrationScreen';
 import TestLottieScreen from './src/screens/TestLottieScreen';
+import AttendanceScreen from './src/screens/AttendanceScreen';
+import NotificationCenterScreen from './src/screens/NotificationCenterScreen';
+import AttendanceAnalyticsScreen from './src/screens/AttendanceAnalyticsScreen';
+import AcademicCalendarScreen from './src/screens/AcademicCalendarScreen';
 import VersionChecker from './src/components/VersionChecker';
 import ErrorBoundary from './src/components/ErrorBoundary';
 
@@ -66,6 +72,16 @@ export default function App() {
         
         setUserToken(token);
         if (userJson) setInitialUser(JSON.parse(userJson));
+
+        // 🧹 ONE-TIME CACHE PURGE: Clear stale timetable cache from broken server era
+        const cacheVersion = await AsyncStorage.getItem('@astra_cache_version').catch(() => null);
+        if (cacheVersion !== 'v2') {
+          const allKeys = await AsyncStorage.getAllKeys();
+          const staleKeys = allKeys.filter(k => k.startsWith('@astra_cache_'));
+          if (staleKeys.length > 0) await AsyncStorage.multiRemove(staleKeys);
+          await AsyncStorage.setItem('@astra_cache_version', 'v2');
+          console.log('[BOOT] Purged stale cache entries:', staleKeys.length);
+        }
         
         clearTimeout(timer);
         setIsSystemInitialized(true);
@@ -75,6 +91,29 @@ export default function App() {
       }
     };
     bootstrapAsync();
+  }, []);
+
+  const [highReliabilityEnabled, setHighReliabilityEnabled] = React.useState(null);
+
+  // 🛡️ ASTRA SHIELD: Hybrid Foreground Service Controller
+  React.useEffect(() => {
+    const fetchSettingAndCheckTime = async () => {
+      const hiRelStr = await AsyncStorage.getItem('high_reliability_mode');
+      const isEnabled = hiRelStr !== 'false';
+      setHighReliabilityEnabled(isEnabled);
+
+      const hour = new Date().getHours();
+      if (isEnabled && hour >= 8 && hour < 17) {
+        startAstraService();
+      } else {
+        stopAstraService();
+      }
+    };
+
+    fetchSettingAndCheckTime();
+    const interval = setInterval(fetchSettingAndCheckTime, 15 * 60 * 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   if (!isSystemInitialized || !fontsLoaded) {
@@ -91,58 +130,68 @@ export default function App() {
   };
 
   return (
-    <ErrorBoundary>
-      <NavigationContainer theme={MyTheme}>
-        <VersionChecker />
-        <StatusBar barStyle="light-content" backgroundColor={colors.bg0} />
-        <Stack.Navigator 
-          initialRouteName={userToken ? "Main" : "RoleSelection"} 
-          screenOptions={{ 
-            headerShown: false,
-            animation: 'slide_from_right',
-            animationDuration: 200,
-            gestureEnabled: true
-          }}
-        >
-          {userToken ? (
-            <>
-              <Stack.Screen name="Main" component={MainTabNavigator} initialParams={{ user: initialUser }} />
-              <Stack.Screen name="StudentDirectory" component={StudentDirectoryScreen} />
-              <Stack.Screen name="QR" component={QRScreen} />
-              <Stack.Screen name="Tracker" component={TrackerScreen} />
-              <Stack.Screen name="ZoneManagement" component={ZoneManagementScreen} />
-              <Stack.Screen name="Tools" component={ToolsScreen} />
-              <Stack.Screen name="RealTimeMap" component={RealTimeMapScreen} />
-              <Stack.Screen name="Verification" component={VerificationScreen} />
-              <Stack.Screen name="AIChatbot" component={AIChatbotScreen} />
-              <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
-              <Stack.Screen name="Feedback" component={FeedbackScreen} />
-              <Stack.Screen name="TestLottie" component={TestLottieScreen} />
-              {/* Allow going back to Auth if needed, though usually redirected by navigation actions */}
-              <Stack.Screen name="Auth" component={AuthScreen} />
-              <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
-            </>
-          ) : (
-            <>
-              <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
-              <Stack.Screen name="Auth" component={AuthScreen} />
-              <Stack.Screen name="Main" component={MainTabNavigator} />
-              <Stack.Screen name="StudentDirectory" component={StudentDirectoryScreen} />
-              <Stack.Screen name="QR" component={QRScreen} />
-              <Stack.Screen name="Tracker" component={TrackerScreen} />
-              <Stack.Screen name="ZoneManagement" component={ZoneManagementScreen} />
-              <Stack.Screen name="Tools" component={ToolsScreen} />
-              <Stack.Screen name="RealTimeMap" component={RealTimeMapScreen} />
-              <Stack.Screen name="Verification" component={VerificationScreen} />
-              <Stack.Screen name="AIChatbot" component={AIChatbotScreen} />
-              <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
-              <Stack.Screen name="Feedback" component={FeedbackScreen} />
-              <Stack.Screen name="TestLottie" component={TestLottieScreen} />
-            </>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
-    </ErrorBoundary>
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <NavigationContainer theme={MyTheme}>
+          <VersionChecker />
+          <StatusBar barStyle="light-content" backgroundColor={colors.bg0} />
+          <Stack.Navigator 
+            initialRouteName={userToken ? "Main" : "RoleSelection"} 
+            screenOptions={{ 
+              headerShown: false,
+              animation: 'slide_from_right',
+              animationDuration: 200,
+              gestureEnabled: true
+            }}
+          >
+            {userToken ? (
+              <>
+                <Stack.Screen name="Main" component={MainTabNavigator} initialParams={{ user: initialUser }} />
+                <Stack.Screen name="StudentDirectory" component={StudentDirectoryScreen} />
+                <Stack.Screen name="QR" component={QRScreen} />
+                <Stack.Screen name="Tracker" component={TrackerScreen} />
+                <Stack.Screen name="ZoneManagement" component={ZoneManagementScreen} />
+                <Stack.Screen name="Tools" component={ToolsScreen} />
+                <Stack.Screen name="RealTimeMap" component={RealTimeMapScreen} />
+                <Stack.Screen name="Verification" component={VerificationScreen} />
+                <Stack.Screen name="AIChatbot" component={AIChatbotScreen} />
+                <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
+                <Stack.Screen name="Feedback" component={FeedbackScreen} />
+                <Stack.Screen name="TestLottie" component={TestLottieScreen} />
+                <Stack.Screen name="Attendance" component={AttendanceScreen} />
+                <Stack.Screen name="AttendanceAnalytics" component={AttendanceAnalyticsScreen} />
+                <Stack.Screen name="Board" component={NotificationCenterScreen} />
+                <Stack.Screen name="AcademicCalendar" component={AcademicCalendarScreen} />
+                {/* Allow going back to Auth if needed, though usually redirected by navigation actions */}
+                <Stack.Screen name="Auth" component={AuthScreen} />
+                <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
+              </>
+            ) : (
+              <>
+                <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
+                <Stack.Screen name="Auth" component={AuthScreen} />
+                <Stack.Screen name="Main" component={MainTabNavigator} />
+                <Stack.Screen name="StudentDirectory" component={StudentDirectoryScreen} />
+                <Stack.Screen name="QR" component={QRScreen} />
+                <Stack.Screen name="Tracker" component={TrackerScreen} />
+                <Stack.Screen name="ZoneManagement" component={ZoneManagementScreen} />
+                <Stack.Screen name="Tools" component={ToolsScreen} />
+                <Stack.Screen name="RealTimeMap" component={RealTimeMapScreen} />
+                <Stack.Screen name="Verification" component={VerificationScreen} />
+                <Stack.Screen name="AIChatbot" component={AIChatbotScreen} />
+                <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
+                <Stack.Screen name="Feedback" component={FeedbackScreen} />
+                <Stack.Screen name="TestLottie" component={TestLottieScreen} />
+                <Stack.Screen name="Attendance" component={AttendanceScreen} />
+                <Stack.Screen name="AttendanceAnalytics" component={AttendanceAnalyticsScreen} />
+                <Stack.Screen name="Board" component={NotificationCenterScreen} />
+                <Stack.Screen name="AcademicCalendar" component={AcademicCalendarScreen} />
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </ErrorBoundary>
+    </SafeAreaProvider>
   );
 }
 

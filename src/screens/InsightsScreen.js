@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -44,7 +44,7 @@ const colors = {
 };
 
 export default function InsightsScreen({ route, navigation }) {
-    const { user } = route.params || { user: { name: 'OPERATOR' } };
+    const { user } = route.params || { user: { name: 'Student' } };
     const [aiData, setAiData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -65,7 +65,9 @@ export default function InsightsScreen({ route, navigation }) {
             if (res.ok && res.data) {
                 setAiData(res.data);
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[Insights] Load error:', e.message);
+        }
         setLoading(false);
         setRefreshing(false);
     };
@@ -85,8 +87,8 @@ export default function InsightsScreen({ route, navigation }) {
                     <Ionicons name="chevron-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>NEURAL_ANALYTICS</Text>
-                    <Text style={styles.sub}>PREDICTIVE_ENGINE_v2.0_ONLINE</Text>
+                    <Text style={styles.title}>AI Insights</Text>
+                    <Text style={styles.sub}>Smart performance analysis</Text>
                 </View>
             </View>
 
@@ -94,7 +96,7 @@ export default function InsightsScreen({ route, navigation }) {
                 {aiData?.error ? (
                     <View blurType="dark" blurAmount={8} style={styles.errorCard}>
                         <Ionicons name="alert-circle" size={40} color={colors.hot} />
-                        <Text style={styles.errorTitle}>ENGINE_OFFLINE</Text>
+                        <Text style={styles.errorTitle}>Service Unavailable</Text>
                         <Text style={styles.errorText}>{aiData.error}</Text>
                     </View>
                 ) : !aiData ? (
@@ -104,12 +106,12 @@ export default function InsightsScreen({ route, navigation }) {
                         <View blurType="dark" blurAmount={10} style={styles.mainCard}>
                             <View style={styles.cardHeader}>
                                 <Ionicons name="analytics-outline" size={20} color={colors.neonBlue} />
-                                <Text style={styles.cardTitle}>PREDICTED_FINAL_YIELD</Text>
+                                <Text style={styles.cardTitle}>PREDICTED FINAL SCORE</Text>
                             </View>
                             <View style={styles.predictionArea}>
                                 <Text style={styles.predictionPct}>{aiData.prediction?.predicted_marks || '--'}%</Text>
                                 <View style={styles.confidenceBox}>
-                                    <Text style={styles.confLab}>CONFIDENCE_VEC</Text>
+                                    <Text style={styles.confLab}>CONFIDENCE</Text>
                                     <Text style={styles.confVal}>{(aiData.prediction?.confidence_score * 100 || 0).toFixed(0)}%</Text>
                                 </View>
                             </View>
@@ -121,22 +123,22 @@ export default function InsightsScreen({ route, navigation }) {
                         <View blurType="dark" blurAmount={8} style={styles.driftCard}>
                             <View style={styles.cardHeader}>
                                 <Animated.View style={[styles.pulseDot, pulseStyle, { backgroundColor: aiData.drift?.drift_risk === 'High' ? colors.hot : colors.neonGreen }]} />
-                                <Text style={styles.cardTitle}>ATTENDANCE_DRIFT_SCAN</Text>
+                                <Text style={styles.cardTitle}>ATTENDANCE TREND</Text>
                             </View>
                             <View style={styles.driftStatus}>
                                 <Text style={[styles.riskLevel, { color: aiData.drift?.drift_risk === 'High' ? colors.hot : colors.neonGreen }]}>
-                                    RISK_LEVEL: {aiData.drift?.drift_risk?.toUpperCase()}
+                                    RISK: {aiData.drift?.drift_risk?.toUpperCase()}
                                 </Text>
                                 <Text style={styles.driftMsg}>{aiData.drift?.message}</Text>
                             </View>
                             <View style={styles.driftStats}>
                                 <View style={styles.driftStat}>
-                                    <Text style={styles.dLab}>RECENT_TREND</Text>
+                                    <Text style={styles.dLab}>RECENT</Text>
                                     <Text style={styles.dVal}>{(aiData.drift?.recent_trend * 100 || 0).toFixed(0)}%</Text>
                                 </View>
                                 <View style={styles.vLine} />
                                 <View style={styles.driftStat}>
-                                    <Text style={styles.dLab}>BASE_AVERAGE</Text>
+                                    <Text style={styles.dLab}>OVERALL AVG</Text>
                                     <Text style={styles.dVal}>{(aiData.drift?.overall_average * 100 || 0).toFixed(0)}%</Text>
                                 </View>
                             </View>
@@ -144,7 +146,7 @@ export default function InsightsScreen({ route, navigation }) {
 
                         <View style={styles.infoHub}>
                             <Ionicons name="information-circle-outline" size={16} color={colors.textDim} />
-                            <Text style={styles.infoText}>NEURAL_ANALYSIS_BASED_ON_MARTS_v2_DATASET</Text>
+                            <Text style={styles.infoText}>Analysis based on your attendance and marks data</Text>
                         </View>
                     </View>
                 )}

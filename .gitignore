@@ -48,3 +48,8 @@ yarn-error.*
 *.apk
 /web-build/
 dist/
+
+# Firebase/Google credentials — NEVER commit these
+google-services.json
+GoogleService-Info.plist
+firebase-credentials.json

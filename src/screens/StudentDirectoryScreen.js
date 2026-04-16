@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
     View,
     Text,
@@ -46,6 +46,17 @@ const StudentDirectoryScreen = ({ navigation }) => {
     const [selectedSection, setSelectedSection] = useState('All');
     const [liveData, setLiveData] = useState(STUDENTS);
     const [loading, setLoading] = useState(true);
+    const [currentUser, setCurrentUser] = useState(null);
+
+    const init = useCallback(async () => {
+        try {
+            const userStr = await SecureStore.getItemAsync('user');
+            if (userStr) setCurrentUser(JSON.parse(userStr));
+            await fetchUsers();
+        } catch (e) {
+            console.log('Init error:', e);
+        }
+    }, [fetchUsers]);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -84,8 +95,39 @@ const StudentDirectoryScreen = ({ navigation }) => {
     }, []);
 
     React.useEffect(() => {
-        fetchUsers();
-    }, [fetchUsers]);
+        init();
+    }, [init]);
+
+    const resetDeviceBinding = async (rollNumber) => {
+        Alert.alert(
+            'Reset Device',
+            `Are you sure you want to clear device binding for ${rollNumber}? The student will need to re-register.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'RESET',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const token = await SecureStore.getItemAsync('token');
+                            const res = await fetchWithTimeout(`/api/admin/reset-device`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}` },
+                                body: JSON.stringify({ rollNumber })
+                            });
+                            if (res.ok) {
+                                Alert.alert('SUCCESS', `Binding for ${rollNumber} has been cleared.`);
+                            } else {
+                                Alert.alert('ERROR', res.data?.error || 'Reset failed.');
+                            }
+                        } catch (err) {
+                            Alert.alert('Connection Error', err.message);
+                        }
+                    }
+                }
+            ]
+        );
+    };
 
     const branches = useMemo(() => ['All', ...new Set(liveData.map(s => s.branch))], [liveData]);
     const sections = useMemo(() => ['All', ...new Set(liveData.map(s => s.section))], [liveData]);
@@ -119,7 +161,16 @@ const StudentDirectoryScreen = ({ navigation }) => {
             </View>
             <View style={style.attendanceContainer}>
                 <Text style={[style.attendanceText, { color: getStatusColor(item.status) }]}>{item.att}%</Text>
-                <Text style={style.weekText}>W_SEQ: 12</Text>
+                <Text style={style.weekText}>Week 12</Text>
+                
+                {(currentUser?.role === 'admin' || currentUser?.role === 'faculty') && (
+                    <TouchableOpacity 
+                        style={style.resetBtn} 
+                        onPress={() => resetDeviceBinding(item.id)}
+                    >
+                        <Ionicons name="refresh-circle" size={24} color={colors.hot} />
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );
@@ -134,10 +185,10 @@ const StudentDirectoryScreen = ({ navigation }) => {
                     <TouchableOpacity onPress={() => navigation.goBack()} style={style.backButton}>
                         <Ionicons name="chevron-back" size={24} color="#fff" />
                     </TouchableOpacity>
-                    <Text style={style.headerTitle}>REGISTRY_DB</Text>
+                    <Text style={style.headerTitle}>Students</Text>
                     <View style={style.totalBadge}>
                         <Text style={style.totalVal}>{filteredStudents.length}</Text>
-                        <Text style={style.totalLab}>NODES</Text>
+                        <Text style={style.totalLab}>TOTAL</Text>
                     </View>
                 </View>
 
@@ -145,7 +196,7 @@ const StudentDirectoryScreen = ({ navigation }) => {
                     <Ionicons name="search-outline" size={18} color={colors.neonBlue} style={style.searchIcon} />
                     <TextInput
                         style={style.searchInput}
-                        placeholder="SEARCH_BY_IDENTITY..."
+                        placeholder="Search by name or roll number..."
                         placeholderTextColor="rgba(255,255,255,0.2)"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
@@ -177,7 +228,7 @@ const StudentDirectoryScreen = ({ navigation }) => {
                                 }}
                                 style={[style.filterChip, selectedSection === item && { borderColor: colors.neonPurple, backgroundColor: 'rgba(191, 0, 255, 0.1)' }]}
                             >
-                                <Text style={[style.filterChipText, selectedSection === item && { color: colors.neonPurple }]}>SEC_{item.toUpperCase()}</Text>
+                                <Text style={[style.filterChipText, selectedSection === item && { color: colors.neonPurple }]}>{item.toUpperCase()}</Text>
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
@@ -198,7 +249,7 @@ const StudentDirectoryScreen = ({ navigation }) => {
                     ListEmptyComponent={
                         <View style={style.emptyContainer}>
                             <Ionicons name="alert-circle-outline" size={48} color={colors.textDim} />
-                            <Text style={style.emptyText}>NO_RECORDS_MATCH_QUERY</Text>
+                            <Text style={style.emptyText}>No students found</Text>
                         </View>
                     }
                 />
@@ -239,7 +290,8 @@ const style = StyleSheet.create({
     weekText: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.textDim, marginTop: 4 },
 
     emptyContainer: { padding: 60, alignItems: 'center', gap: 15 },
-    emptyText: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textDim, letterSpacing: 2 }
+    emptyText: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textDim, letterSpacing: 2 },
+    resetBtn: { marginTop: 10, padding: 4 }
 });
 
 export default StudentDirectoryScreen;

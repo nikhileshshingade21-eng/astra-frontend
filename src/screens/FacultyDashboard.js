@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -192,21 +192,21 @@ export default function FacultyDashboard({ route, navigation }) {
         <View style={styles.container}>
             <LinearGradient colors={['#020617', '#0b0e14']} style={StyleSheet.absoluteFill} />
             
-            <View style={styles.header}>
-                <View>
-                    <Text style={styles.title}>COMMAND_CENTER</Text>
-                    <Text style={styles.subTitle}>REAL-TIME SESSION MONITORING</Text>
+            <View style={styles.staffHub}>
+                <View style={[styles.activeSessionCard, { backgroundColor: 'rgba(2, 6, 23, 0.7)' }]}>
+                    <Text style={styles.sessionLabel}>CURRENT LIVE SESSION</Text>
+                    <Text style={styles.sessionTitle}>{selectedClass?.name} ({selectedClass?.code})</Text>
                 </View>
                 <TouchableOpacity style={styles.broadcastTrigger} onPress={() => setShowBroadcast(true)}>
                     <LinearGradient colors={[colors.neonGreen, colors.neonBlue]} style={styles.broadcastGrad}>
                         <Ionicons name="wifi" size={16} color="#000" />
-                        <Text style={styles.broadcastText}>BROADCAST</Text>
+                        <Text style={styles.broadcastText}>SHARE QR</Text>
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
 
             <View style={styles.classSection}>
-                <Text style={styles.secLabel}>ACTIVE_REGISTRY</Text>
+                <Text style={styles.secLabel}>YOUR CLASSES</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.classScroll}>
                     {classes.map(c => (
                         <TouchableOpacity 
@@ -225,19 +225,8 @@ export default function FacultyDashboard({ route, navigation }) {
 
             {selectedClass && (
                 <View style={styles.monitorHub}>
-                    <View style={styles.statsRow}>
-                        <View blurType="dark" blurAmount={8} style={[styles.statBox, { borderColor: colors.neonGreen + '40' }]}>
-                            <Text style={styles.statVal}>{liveData?.count || 0}</Text>
-                            <Text style={styles.statLab}>VERIFIED</Text>
-                        </View>
-                        <View intensity={20} style={[styles.statBox, { borderColor: colors.neonPink + '40' }]}>
-                            <Text style={[styles.statVal, { color: colors.neonPink }]}>{Math.max(0, (liveData?.total_enrolled || 0) - (liveData?.count || 0))}</Text>
-                            <Text style={styles.statLab}>OFFLINE</Text>
-                        </View>
-                    </View>
-
                     <View style={styles.chartSection}>
-                        <Text style={styles.secLabel}>ATTENDANCE_VELOCITY_TRENDS</Text>
+                        <Text style={styles.secLabel}>ATTENDANCE TRENDS</Text>
                         <View blurType="dark" blurAmount={3} style={styles.chartGlass}>
                             <LineChart
                                 data={{
@@ -271,14 +260,26 @@ export default function FacultyDashboard({ route, navigation }) {
                         </View>
                     </View>
 
+                    <View style={styles.sessionGrid}>
+                        <View style={styles.sessionStat}>
+                            <Text style={styles.sessionVal}>{liveData?.count || 0}/{liveData?.total_enrolled || 0}</Text>
+                            <Text style={styles.sessionLab}>VERIFIED</Text>
+                        </View>
+                        <View style={[styles.vLine, { backgroundColor: colors.faculty }]} />
+                        <View style={styles.sessionStat}>
+                            <Text style={[styles.sessionVal, { color: colors.neonPink }]}>{Math.max(0, (liveData?.total_enrolled || 0) - (liveData?.count || 0))}</Text>
+                            <Text style={styles.sessionLab}>PENDING</Text>
+                        </View>
+                    </View>
+
                     <View style={styles.logHeader}>
                         <View style={styles.logLabelRow}>
                             <Ionicons name="list" size={14} color={colors.textDim} />
-                            <Text style={styles.secLabel}>LIVE_LOG_FEED</Text>
+                            <Text style={styles.secLabel}>LIVE ATTENDANCE</Text>
                         </View>
                         <TouchableOpacity onPress={() => setAutoRefresh(!autoRefresh)} style={styles.refreshBtn}>
                             <Text style={[styles.refreshText, { color: autoRefresh ? colors.neonGreen : colors.neonPink }]}>
-                                {autoRefresh ? 'AUTO_SYNC: ON' : 'AUTO_SYNC: OFF'}
+                                {autoRefresh ? 'AUTO REFRESH: ON' : 'AUTO REFRESH: OFF'}
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -292,7 +293,7 @@ export default function FacultyDashboard({ route, navigation }) {
                         ListEmptyComponent={() => (
                             <View style={styles.emptyBox}>
                                 <Ionicons name="wifi-outline" size={32} color={colors.textDim} />
-                                <Text style={styles.emptyText}>AWAITING_CLIENT_HANDSHAKE...</Text>
+                                <Text style={styles.emptyText}>Waiting for students to mark attendance...</Text>
                             </View>
                         )}
                     />
@@ -306,7 +307,7 @@ export default function FacultyDashboard({ route, navigation }) {
                         <TouchableOpacity style={styles.closeModal} onPress={() => setShowBroadcast(false)}>
                             <Ionicons name="close" size={24} color="#fff" />
                         </TouchableOpacity>
-                        <Text style={styles.modalTitle}>ATTENDANCE_BROADCAST</Text>
+                        <Text style={styles.modalTitle}>Attendance QR Code</Text>
                         <Text style={styles.modalSub}>{selectedClass?.code} — {selectedClass?.name}</Text>
                         
                         <View style={styles.qrContainer}>
@@ -316,11 +317,11 @@ export default function FacultyDashboard({ route, navigation }) {
                             <View style={styles.qrPulse} />
                         </View>
 
-                        <Text style={styles.modalHint}>STUDENTS_SCAN_THIS_NODE_TO_VERIFY</Text>
+                        <Text style={styles.modalHint}>Students scan this to mark attendance</Text>
                         
                         <View style={styles.activeStatus}>
                             <View style={styles.pulseDot} />
-                            <Text style={styles.activeText}>BROADCAST_ACTIVE</Text>
+                            <Text style={styles.activeText}>QR CODE ACTIVE</Text>
                         </View>
                     </View>
                 </View>

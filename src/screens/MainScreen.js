@@ -3,14 +3,14 @@ import { View, Text, StyleSheet, StatusBar } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 export default function MainScreen({ route }) {
-    const { user } = route.params || { user: { name: 'OPERATOR' } };
+    const { user } = route.params || { user: { name: 'Student' } };
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" />
             <LinearGradient colors={['#020617', '#0f172a']} style={StyleSheet.absoluteFill} />
             <View style={styles.glass}>
-                <Text style={styles.sub}>SYSTEM_STATUS: ONLINE</Text>
-                <Text style={styles.text}>WELCOME_BACK, {user?.name?.toUpperCase()}</Text>
+                <Text style={styles.sub}>STATUS: ONLINE</Text>
+                <Text style={styles.text}>Welcome back, {user?.name || 'Student'}</Text>
                 <View style={styles.line} />
             </View>
         </View>

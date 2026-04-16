@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -117,13 +117,16 @@ export default function VerificationScreen({ navigation }) {
 
     useEffect(() => {
         if (socket && activeClass && isActive) {
-            const eventName = `ATTENDANCE_MARKED_${activeClass}`;
+            const eventName = 'ATTENDANCE_MARKED';
             socket.on(eventName, (data) => {
-                console.log('[SOCKET] Real attendance received:', data.student.roll_number);
-                setGridData(prev => {
-                    return prev.map(s => s.id === data.student.roll_number ? { ...s, verified: true } : s);
-                });
-                setVerifiedCount(c => c + 1);
+                const roll = data.roll_number || (data.student && data.student.roll_number);
+                console.log('[SOCKET] Real attendance received:', roll);
+                if (roll) {
+                    setGridData(prev => {
+                        return prev.map(s => s.id === roll ? { ...s, verified: true } : s);
+                    });
+                    setVerifiedCount(c => c + 1);
+                }
             });
             return () => socket.off(eventName);
         }
@@ -194,9 +197,9 @@ export default function VerificationScreen({ navigation }) {
                     <Ionicons name="chevron-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>VERIFY_PROTOCOL</Text>
+                    <Text style={styles.title}>Verification</Text>
                     <Text style={[styles.sub, { color: isActive ? colors.neonGreen : colors.textDim }]}>
-                        STATUS: {isActive ? 'BROADCASTING' : 'IDLE'}
+                        STATUS: {isActive ? 'ACTIVE' : 'STOPPED'}
                     </Text>
                 </View>
             </View>
@@ -213,14 +216,14 @@ export default function VerificationScreen({ navigation }) {
                     <TouchableOpacity style={styles.startBtn} onPress={handleStart}>
                         <LinearGradient colors={[colors.neonBlue, colors.neonPurple]} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.startBtnGrad}>
                             <Ionicons name="flash-outline" size={20} color="#000" style={{ marginRight: 10 }} />
-                            <Text style={styles.startBtnText}>INITIATE_HANDSHAKE</Text>
+                            <Text style={styles.startBtnText}>START VERIFICATION</Text>
                         </LinearGradient>
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity style={styles.stopBtn} onPress={handleStop}>
                         <View style={styles.stopContent}>
                             <Ionicons name="close-circle-outline" size={20} color={colors.hot} style={{ marginRight: 10 }} />
-                            <Text style={styles.stopBtnText}>ABORT_PROTOCOL</Text>
+                            <Text style={styles.stopBtnText}>STOP</Text>
                         </View>
                     </TouchableOpacity>
                 )}
@@ -228,12 +231,12 @@ export default function VerificationScreen({ navigation }) {
                 {isActive && (
                     <View style={styles.qrBroadcast}>
                         <View blurType="dark" blurAmount={5} style={styles.qrCard}>
-                            <Text style={styles.qrLabel}>SCAN_TO_MARK_PRESENCE</Text>
+                            <Text style={styles.qrLabel}>SCAN TO MARK ATTENDANCE</Text>
                             <View style={styles.qrBox}>
                                 <QRCode value={qrPayload} size={150} color="#000" backgroundColor="#fff" quietZone={10} />
                                 <View style={styles.qrGlow} />
                             </View>
-                            <Text style={styles.qrSub}>SESSION_EXPIRY: {timeLeft}s</Text>
+                            <Text style={styles.qrSub}>Expires in: {timeLeft}s</Text>
                         </View>
                     </View>
                 )}
@@ -254,7 +257,7 @@ export default function VerificationScreen({ navigation }) {
                 </View>
 
                 <View style={styles.gridFrame}>
-                    <Text style={styles.gridTitle}>REAL-TIME_VISUALIZER // SECTOR_A</Text>
+                    <Text style={styles.gridTitle}>LIVE ATTENDANCE TRACKER</Text>
                     <View style={styles.grid}>
                         {gridData.map((node, i) => (
                             <View 

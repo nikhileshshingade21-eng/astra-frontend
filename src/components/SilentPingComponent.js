@@ -69,7 +69,7 @@ const SilentPingComponent = ({ classId, className, onPingComplete }) => {
                 </TouchableOpacity>
             ) : isPinging ? (
                 <View style={styles.activePing}>
-                    <Text style={styles.activeLabel}>BROADCASTING PROTOCOL...</Text>
+                    <Text style={styles.activeLabel}>CHECKING ATTENDANCE...</Text>
                     <View style={styles.progressBar}>
                         <Animated.View
                             style={[
@@ -111,7 +111,7 @@ const SilentPingComponent = ({ classId, className, onPingComplete }) => {
                     />
 
                     <TouchableOpacity style={styles.resetBtn} onPress={() => setResults(null)}>
-                        <Text style={styles.resetBtnText}>RESET PROTOCOL</Text>
+                        <Text style={styles.resetBtnText}>START AGAIN</Text>
                     </TouchableOpacity>
                 </View>
             )}
