@@ -199,11 +199,7 @@ export default function ProfileScreen({ route, navigation }) {
                                 <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
                             </View>
                             <View style={styles.gradesContent}>
-                                <Text style={styles.gradesOverall}>8.2 CGPA</Text>
-                                <View style={styles.trendTag}>
-                                    <Ionicons name="arrow-up" size={12} color={Colors.success} />
-                                    <Text style={styles.trendText}>+0.4</Text>
-                                </View>
+                                <Text style={styles.gradesOverall}>0.0 CGPA</Text>
                             </View>
                         </TouchableOpacity>
                     </Animated.View>
