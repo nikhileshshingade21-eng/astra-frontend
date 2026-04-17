@@ -12,7 +12,9 @@ import {
     LayoutAnimation,
     Platform,
     UIManager,
-    Dimensions
+    Dimensions,
+    Alert,
+    ScrollView
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 // import { BlurView } from '@react-native-community/blur';

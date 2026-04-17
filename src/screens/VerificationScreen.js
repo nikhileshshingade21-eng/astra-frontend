@@ -13,7 +13,6 @@ import {
     ActivityIndicator
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-// import { BlurView } from '@react-native-community/blur';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import * as SecureStore from '../utils/storage';
 import QRCode from 'react-native-qrcode-svg';
@@ -29,7 +28,6 @@ import { fetchWithTimeout } from '../utils/api';
 import Colors from '../theme/colors';
 import AstraTouchable from '../components/AstraTouchable';
 import { API_BASE } from '../api/config';
-import io from 'socket.io-client';
 
 const { width } = Dimensions.get('window');
 const VERIFICATION_TIME = 45;
@@ -40,18 +38,26 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const colors = Colors;
 
-export default function VerificationScreen({ navigation }) {
+export default function VerificationScreen({ route, navigation }) {
     const [timeLeft, setTimeLeft] = useState(VERIFICATION_TIME);
     const [isActive, setIsActive] = useState(false);
     const [verifiedCount, setVerifiedCount] = useState(0);
     const [gridData, setGridData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
+    const [activeClass, setActiveClass] = useState(route?.params?.classId || null);
+    const [socket, setSocket] = useState(null);
 
     const pulse = useSharedValue(1);
 
     useEffect(() => {
         loadUsers();
+        setupSocket();
+        return () => {
+            if (socket) {
+                socket.disconnect();
+            }
+        };
     }, []);
 
     const loadUsers = async () => {
@@ -80,18 +86,11 @@ export default function VerificationScreen({ navigation }) {
         }
     };
 
-    const [activeClass, setActiveClass] = useState(route.params?.classId || null);
-    const [socket, setSocket] = useState(null);
-
-    useEffect(() => {
-        loadUsers();
-        setupSocket();
-    }, []);
-
     const setupSocket = async () => {
         try {
-            const io = require('socket.io-client');
-            const newSocket = io(API_BASE.replace('/api', ''), {
+            const ioLib = require('socket.io-client');
+            const ioConnect = ioLib.io || ioLib.default || ioLib;
+            const newSocket = ioConnect(API_BASE.replace('/api', ''), {
                 transports: ['websocket'],
                 reconnection: true
             });
@@ -225,7 +224,7 @@ export default function VerificationScreen({ navigation }) {
 
                 {isActive && (
                     <View style={styles.qrBroadcast}>
-                        <View blurType="dark" blurAmount={5} style={styles.qrCard}>
+                        <View style={styles.qrCard}>
                             <Text style={styles.qrLabel}>SCAN TO MARK ATTENDANCE</Text>
                             <View style={styles.qrBox}>
                                 <QRCode value={qrPayload} size={150} color="#000" backgroundColor="#fff" quietZone={10} />
@@ -237,15 +236,15 @@ export default function VerificationScreen({ navigation }) {
                 )}
 
                 <View style={styles.statsStrip}>
-                    <View blurType="dark" blurAmount={3} style={styles.statChip}>
+                    <View style={styles.statChip}>
                         <Text style={styles.chipVal}>{verifiedCount}</Text>
                         <Text style={styles.chipLab}>VERIFIED</Text>
                     </View>
-                    <View blurType="dark" blurAmount={3} style={styles.statChip}>
+                    <View style={styles.statChip}>
                         <Text style={styles.chipVal}>{gridData.length - verifiedCount}</Text>
                         <Text style={styles.chipLab}>PENDING</Text>
                     </View>
-                    <View intensity={10} style={styles.statChip}>
+                    <View style={styles.statChip}>
                         <Text style={[styles.chipVal, { color: colors.neonGreen }]}>{Math.round(progressPercentage)}%</Text>
                         <Text style={styles.chipLab}>YIELD</Text>
                     </View>
@@ -311,4 +310,3 @@ const styles = StyleSheet.create({
     gridNode: { width: 34, height: 34, borderRadius: 10, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
     nodeText: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.textDim }
 });
-

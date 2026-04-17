@@ -156,17 +156,18 @@ export default function AuthScreen({ route, navigation }) {
             let res;
             
             // Backend handles login via biometric_auth or traditional password fallback
+            const finalUsePassword = usePassword || (password && password.length > 0);
             const body = tab === 'login' 
                 ? { 
                     roll_number: loginId.trim(), 
                     device_id: deviceId, 
-                    biometric_auth: !usePassword,
-                    password: usePassword ? password : null,
+                    biometric_auth: !finalUsePassword,
+                    password: finalUsePassword ? password : null,
                     fcm_token: fcmToken
                 }
                 : { 
                     roll_number: regId.trim(), name: regName, 
-                    email, phone, programme, section, role, 
+                    email, phone, programme, section, role: 'student', 
                     password: regPassword,
                     device_id: deviceId, biometric_enrolled: true,
                     fcm_token: fcmToken
@@ -325,9 +326,11 @@ export default function AuthScreen({ route, navigation }) {
                     <TouchableOpacity style={[styles.tab, tab === 'login' && styles.activeTab]} onPress={() => setTab('login')}>
                         <Text style={[styles.tabText, tab === 'login' && { color: roleColor }]}>LOGIN</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.tab, tab === 'register' && styles.activeTab]} onPress={() => setTab('register')}>
-                        <Text style={[styles.tabText, tab === 'register' && { color: roleColor }]}>REGISTER</Text>
-                    </TouchableOpacity>
+                    {role === 'student' && (
+                        <TouchableOpacity style={[styles.tab, tab === 'register' && styles.activeTab]} onPress={() => setTab('register')}>
+                            <Text style={[styles.tabText, tab === 'register' && { color: roleColor }]}>REGISTER</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {formError ? <Text style={styles.errorText}>{formError}</Text> : null}
@@ -491,7 +494,6 @@ export default function AuthScreen({ route, navigation }) {
                             secureTextEntry 
                             value={password} 
                             onChangeText={setPassword}
-                            onBlur={() => password && finishAuth()}
                         />
                     </View>
                     <TouchableOpacity style={[styles.stepBtn, { backgroundColor: roleColor }]} onPress={finishAuth} disabled={loading}>
