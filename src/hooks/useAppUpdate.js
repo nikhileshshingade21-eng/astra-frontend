@@ -68,7 +68,7 @@ export default function useAppUpdate() {
             }
 
             // Fetch from server
-            const response = await fetch(`${API_BASE}/api/system/version?platform=android&currentVersionCode=${currentVersionCode}`, {
+            const response = await fetch(`${API_BASE}/api/version?platform=android&currentVersionCode=${currentVersionCode}`, {
                 method: 'GET',
                 headers: { 'Accept': 'application/json' },
             });
