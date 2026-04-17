@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ASTRA FileProvider Paths
+  Required for sharing APK files with the package installer on Android 7+.
+  The DownloadManager saves APKs to the public Downloads directory,
+  so we expose that path via FileProvider.
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Public Downloads directory where DownloadManager saves APKs -->
+    <external-path name="downloads" path="Download/" />
+    <!-- Also cover the full external storage as a fallback -->
+    <external-path name="external" path="." />
+</paths>

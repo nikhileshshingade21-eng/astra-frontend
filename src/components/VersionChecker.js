@@ -1,50 +1,39 @@
-import React, { useEffect } from 'react';
-import { Alert, Linking, Platform } from 'react-native';
-import axios from 'axios';
+import React from 'react';
+import useAppUpdate from '../hooks/useAppUpdate';
+import UpdateModal from './UpdateModal';
 
-// ASTRA V7 PRODUCTION: The current app version matching app.json
-const CURRENT_VERSION = '1.2.1';
-const API_BASE_URL = 'https://violet-toys-jump.loca.lt';
-
+/**
+ * ─────────────────────────────────────────────────────────────
+ *  ASTRA VersionChecker — Drop-in Auto-Update Controller
+ * ─────────────────────────────────────────────────────────────
+ *  This is a silent background component that:
+ *    1. Checks for updates on mount (with 3s delay)
+ *    2. Periodically re-checks every 6 hours
+ *    3. Shows a premium update modal when an update is found
+ *    4. Handles the full download → install lifecycle
+ *
+ *  Usage:
+ *    Just drop <VersionChecker /> anywhere in your app tree.
+ *    It's already in App.js — no extra setup needed.
+ * ─────────────────────────────────────────────────────────────
+ */
 const VersionChecker = () => {
-  useEffect(() => {
-    const checkForUpdates = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/version`, {
-            params: {
-                platform: Platform.OS,
-                currentVersion: CURRENT_VERSION
-            }
-        });
+    const update = useAppUpdate();
 
-        const { latestVersion, updateAvailable, forceUpdate, downloadUrl, releaseNotes } = response.data;
-
-        if (updateAvailable) {
-          Alert.alert(
-            forceUpdate ? '🚨 Mandatory Update Required' : '🚀 New Update Available',
-            `A new version (${latestVersion}) of ASTRA is available.\n\nChanges:\n${releaseNotes}`,
-            [
-              {
-                text: 'Update Now',
-                onPress: () => Linking.openURL(downloadUrl)
-              },
-              !forceUpdate && {
-                text: 'Later',
-                style: 'cancel'
-              }
-            ].filter(Boolean),
-            { cancelable: !forceUpdate }
-          );
-        }
-      } catch (error) {
-        console.log('[VersionChecker] Skip: No network or server down.');
-      }
-    };
-
-    checkForUpdates();
-  }, []);
-
-  return null; // Silent background component
+    return (
+        <UpdateModal
+            visible={update.showModal}
+            updateInfo={update.updateInfo}
+            downloading={update.downloading}
+            progress={update.downloadProgress}
+            downloadComplete={update.downloadComplete}
+            installing={update.installing}
+            error={update.error}
+            onUpdate={update.startDownload}
+            onDismiss={update.dismissUpdate}
+            currentVersion={update.currentVersionName}
+        />
+    );
 };
 
 export default VersionChecker;

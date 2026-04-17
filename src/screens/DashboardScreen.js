@@ -326,7 +326,7 @@ export default function DashboardScreen({ route, navigation }) {
                                 <View style={styles.statusIcon}>
                                     <Ionicons name={getStatusIcon(cls.live_status)} size={22} color={getStatusColor(cls.live_status)} />
                                 </View>
-                            </TouchableOpacity>
+                            </AstraTouchable>
                         </Animated.View>
                     ))
                 ) : (
