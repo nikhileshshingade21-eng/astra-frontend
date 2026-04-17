@@ -29,6 +29,7 @@ import AcademicCalendarScreen from './src/screens/AcademicCalendarScreen';
 import VersionChecker from './src/components/VersionChecker';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { Colors as ThemeColors } from './src/theme/colors';
+import { navigationRef } from './src/navigation/navigationService';
 
 const colors = ThemeColors;
 
@@ -120,7 +121,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <NavigationContainer theme={MyTheme}>
+        <NavigationContainer theme={MyTheme} ref={navigationRef}>
           <VersionChecker />
           <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
           <Stack.Navigator 
