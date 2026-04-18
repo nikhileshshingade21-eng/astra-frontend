@@ -330,7 +330,7 @@ export default function AttendanceScreen({ route, navigation }) {
                     <Text style={styles.secLabel}>TODAY'S CLASSES</Text>
                     <AstraTouchable style={styles.scanTrigger} onPress={openScanner}>
                         <LinearGradient colors={colors.gradientPrimary} style={styles.scanTriggerGrad}>
-                            <Ionicons name="qr-code-outline" size={16} color="#000" />
+                            <Ionicons name="qr-code-outline" size={16} color="#fff" />
                             <Text style={styles.scanTriggerText}>SCAN QR</Text>
                         </LinearGradient>
                     </AstraTouchable>
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
     secLabel: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.textDim, letterSpacing: 3 },
     scanTrigger: { borderRadius: 12, overflow: 'hidden' },
     scanTriggerGrad: { paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
-    scanTriggerText: { fontFamily: 'Satoshi-Black', fontSize: 9, color: '#000', letterSpacing: 1 },
+    scanTriggerText: { fontFamily: 'Satoshi-Black', fontSize: 9, color: '#fff', letterSpacing: 1 },
     
     classScroll: { paddingHorizontal: 24, gap: 12 },
     classChip: { borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'transparent' },
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
     inputLabel: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.textDim, letterSpacing: 2, marginBottom: 5 },
     input: { height: 50, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 16, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 20, color: '#fff', fontFamily: 'Satoshi-Bold' },
     verifyBtnSmall: { marginTop: 20, paddingHorizontal: 30, paddingVertical: 15, borderRadius: 12 },
-    btnTextThin: { fontFamily: 'Tanker', fontSize: 14, color: '#000' },
+    btnTextThin: { fontFamily: 'Tanker', fontSize: 14, color: '#fff' },
     skipText: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textDim },
     stepTitle: { fontFamily: 'Tanker', fontSize: 20, color: '#fff', letterSpacing: 1, marginBottom: 20 }
 });
