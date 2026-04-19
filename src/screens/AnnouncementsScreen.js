@@ -35,6 +35,8 @@ import Animated, {
 import { fetchWithTimeout } from '../utils/api';
 import Colors from '../theme/colors';
 import AstraTouchable from '../components/AstraTouchable';
+import useAppUpdate from '../hooks/useAppUpdate';
+import UpdateModal from '../components/UpdateModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -99,6 +101,7 @@ export default function AnnouncementsScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [userRole, setUserRole] = useState('student');
     const [selectedItem, setSelectedItem] = useState(null);
+    const update = useAppUpdate(); // In-App Update Handler
 
     // Form Stats
     const [newTitle, setNewTitle] = useState('');
@@ -184,7 +187,14 @@ export default function AnnouncementsScreen() {
         }
     };
 
-    const markRead = async (id) => {
+    const markRead = async (id, title, message) => {
+        // Logic: If notification is about an update, trigger the update modal
+        const isUpdateNotice = (title?.toLowerCase().includes('update') || message?.toLowerCase().includes('version') || message?.toLowerCase().includes('v3.'));
+        
+        if (isUpdateNotice && update.updateAvailable) {
+            update.setShowModal(true);
+        }
+
         try {
             const token = await SecureStore.getItemAsync('token');
             await fetchWithTimeout(`/api/notifications/read/${id}`, {
@@ -274,7 +284,7 @@ export default function AnnouncementsScreen() {
         const isRead = item.is_read === 1;
         return (
             <Animated.View entering={FadeInRight.delay(index * 50)}>
-                <AstraTouchable onPress={() => markRead(item.id)} activeOpacity={0.8}>
+                <AstraTouchable onPress={() => markRead(item.id, item.title, item.message)} activeOpacity={0.8}>
                     <View style={[styles.activityCard, !isRead && { borderColor: colors.primary + '40', backgroundColor: colors.primary + '05' }]}>
                         <View style={styles.activityHeader}>
                             <View style={styles.activityIdentity}>
@@ -492,6 +502,20 @@ export default function AnnouncementsScreen() {
                     </View>
                 </View>
             </Modal>
+
+            {/* In-App Update Modal (Triggered by notifications) */}
+            <UpdateModal
+                visible={update.showModal}
+                updateInfo={update.updateInfo}
+                downloading={update.downloading}
+                progress={update.downloadProgress}
+                downloadComplete={update.downloadComplete}
+                installing={update.installing}
+                error={update.error}
+                onUpdate={update.startDownload}
+                onDismiss={update.dismissUpdate}
+                currentVersion={update.currentVersionName}
+            />
         </View>
     );
 }
