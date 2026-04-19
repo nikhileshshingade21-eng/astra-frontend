@@ -263,7 +263,7 @@ export default function AuthScreen({ route, navigation }) {
     );
 
     const renderSelectionModal = () => (
-        <Modal visible={pickerVisible} transparent animationType="slide">
+        <Modal visible={pickerVisible} transparent animationType="none">
             <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
                     <Text style={styles.modalTitle}>SELECT {activePicker?.toUpperCase()}</Text>

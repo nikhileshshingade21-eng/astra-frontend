@@ -34,6 +34,7 @@ export const Colors = {
     textPrimary: '#FFFFFF',
     textSecondary: 'rgba(255, 255, 255, 0.85)',
     textMuted: 'rgba(255, 255, 255, 0.50)',
+    textDim: 'rgba(255, 255, 255, 0.35)',
     textDisabled: 'rgba(255, 255, 255, 0.25)',
 
     // ── Surfaces ─────────────────────────────────
