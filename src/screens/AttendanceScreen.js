@@ -11,8 +11,8 @@ import {
     Dimensions,
     Modal,
     TextInput,
-    PermissionsAndroid
-} from 'react-native';
+    PermissionsAndroid,
+    InteractionManager
 import * as SecureStore from '../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
@@ -53,6 +53,7 @@ export default function AttendanceScreen({ route, navigation }) {
     const [classes, setClasses] = useState([]);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [isBunkModalOpen, setIsBunkModalOpen] = useState(false);
+    const [renderBunkData, setRenderBunkData] = useState(false);
     const [stats, setStats] = useState(null);
     const [usePassword, setUsePassword] = useState(false);
     const [password, setPassword] = useState('');
@@ -314,7 +315,13 @@ export default function AttendanceScreen({ route, navigation }) {
                     <Text style={styles.title}>Mark Attendance</Text>
                     <Text style={styles.sub}>Fingerprint, GPS & QR Verification</Text>
                 </View>
-                <TouchableOpacity style={styles.bunkBtn} onPress={() => setIsBunkModalOpen(true)}>
+                <TouchableOpacity style={styles.bunkBtn} onPress={() => {
+                    setIsBunkModalOpen(true);
+                    setRenderBunkData(false);
+                    InteractionManager.runAfterInteractions(() => {
+                        setRenderBunkData(true);
+                    });
+                }}>
                     <LinearGradient colors={[colors.neonPink, colors.neonPurple]} style={styles.bunkGrad}>
                         <Ionicons name="calculator" size={14} color="#fff" />
                     </LinearGradient>
@@ -447,7 +454,7 @@ export default function AttendanceScreen({ route, navigation }) {
                             </TouchableOpacity>
                         </View>
                         
-                        {isBunkModalOpen && (
+                        {isBunkModalOpen && renderBunkData ? (
                             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
                                 <View style={styles.statsOverview}>
                                     <View style={styles.statBox}>
@@ -493,6 +500,11 @@ export default function AttendanceScreen({ route, navigation }) {
                                     </Animated.View>
                                 ))}
                             </ScrollView>
+                        ) : (
+                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                <ActivityIndicator size="large" color={colors.neonBlue} />
+                                <Text style={{ color: colors.textDim, marginTop: 10, fontFamily: 'Satoshi-Bold' }}>Optimizing Metrics...</Text>
+                            </View>
                         )}
                     </View>
                 </View>

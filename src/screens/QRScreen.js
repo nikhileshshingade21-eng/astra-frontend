@@ -12,6 +12,7 @@ import {
     UIManager
 } from 'react-native';
 import { Camera, useCameraPermission, useCodeScanner, useCameraDevice } from 'react-native-vision-camera';
+import { useIsFocused } from '@react-navigation/native';
 import QRCode from 'react-native-qrcode-svg';
 import LinearGradient from 'react-native-linear-gradient';
 // import { BlurView } from '@react-native-community/blur';
@@ -45,6 +46,7 @@ export default function QRScreen({ route, navigation }) {
     const roleColor = role === 'admin' ? colors.neonBlue : (role === 'faculty' ? colors.neonPurple : colors.neonPink);
 
     const [mode, setMode] = useState('generate'); // Students can scan too now
+    const isFocused = useIsFocused();
     const { hasPermission, requestPermission } = useCameraPermission();
     const [scanned, setScanned] = useState(false);
     const device = useCameraDevice('back');
@@ -165,7 +167,7 @@ export default function QRScreen({ route, navigation }) {
                                         style={StyleSheet.absoluteFill}
                                         device={device}
                                         codeScanner={codeScanner}
-                                        isActive={mode === 'scan'}
+                                        isActive={mode === 'scan' && isFocused}
                                     />
                                 )}
                                 <View style={styles.camInterface}>
