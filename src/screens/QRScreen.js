@@ -39,6 +39,26 @@ const colors = {
     hot: '#ff3d71'
 };
 
+const IsolatedQRScanner = ({ roleColor, onScan }) => {
+    const device = useCameraDevice('back');
+    const codeScanner = useCodeScanner({
+        codeTypes: ['qr'],
+        onCodeScanned: (codes) => {
+            if (codes.length > 0) onScan(codes[0].value);
+        }
+    });
+
+    if (!device) return null;
+    return (
+        <Camera
+            style={StyleSheet.absoluteFill}
+            device={device}
+            isActive={true}
+            codeScanner={codeScanner}
+        />
+    );
+};
+
 export default function QRScreen({ route, navigation }) {
     const { user } = route.params || { user: { role: 'student', name: 'OPERATOR' } };
     const role = user.role || 'student';
@@ -49,7 +69,6 @@ export default function QRScreen({ route, navigation }) {
     const isFocused = useIsFocused();
     const { hasPermission, requestPermission } = useCameraPermission();
     const [scanned, setScanned] = useState(false);
-    const device = useCameraDevice('back');
 
     // Animations
     const scanLinePos = useSharedValue(0);
@@ -69,23 +88,15 @@ export default function QRScreen({ route, navigation }) {
         opacity: cornerBase.value - 0.2
     }));
 
-    const codeScanner = useCodeScanner({
-        codeTypes: ['qr'],
-        onCodeScanned: (codes) => {
-            if (scanned || codes.length === 0) return;
-            setScanned(true);
-            const data = codes[0].value;
-            Alert.alert('QR Scanned', `Data: ${data.substring(0, 20)}...`, [
-                {
-                    text: 'OK', onPress: () => {
-                        setScanned(false);
-                    }
+    const processScan = (data) => {
+        Alert.alert('QR Scanned', `Data: ${data.substring(0, 20)}...`, [
+            {
+                text: 'OK', onPress: () => {
+                    setScanned(false);
                 }
-            ]);
-        }
-    });
-
-    const isAuthorized = hasPermission;
+            }
+        ]);
+    };
 
     const qrData = JSON.stringify({
         u: user.roll_number || user.id,
@@ -162,12 +173,15 @@ export default function QRScreen({ route, navigation }) {
                             </TouchableOpacity>
                         ) : (
                             <View style={[styles.camFrame, { borderColor: roleColor + '40' }]}>
-                                {device && (
-                                    <Camera
-                                        style={StyleSheet.absoluteFill}
-                                        device={device}
-                                        codeScanner={codeScanner}
-                                        isActive={mode === 'scan' && isFocused}
+                                {mode === 'scan' && isFocused && (
+                                    <IsolatedQRScanner 
+                                        roleColor={roleColor}
+                                        onScan={(payload) => {
+                                            if (!scanned) {
+                                                setScanned(true);
+                                                processScan(payload);
+                                            }
+                                        }}
                                     />
                                 )}
                                 <View style={styles.camInterface}>

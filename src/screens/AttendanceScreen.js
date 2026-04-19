@@ -22,6 +22,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Geolocation from 'react-native-geolocation-service';
 import { authenticateWithBiometrics } from '../utils/biometrics';
 import { Camera, useCameraDevice, useCodeScanner } from 'react-native-vision-camera';
+import { useIsFocused } from '@react-navigation/native';
 import CryptoJS from 'crypto-js';
 
 import Animated, { 
@@ -58,7 +59,9 @@ export default function AttendanceScreen({ route, navigation }) {
     const [stats, setStats] = useState(null);
     const [usePassword, setUsePassword] = useState(false);
     const [password, setPassword] = useState('');
-    const device = useCameraDevice('back');
+    const [usePassword, setUsePassword] = useState(false);
+    const [password, setPassword] = useState('');
+    const isFocused = useIsFocused();
     
     // Animation Shared Values
     const scannerPos = useSharedValue(0);
@@ -260,25 +263,7 @@ export default function AttendanceScreen({ route, navigation }) {
         setLoading(false);
     };
 
-    const codeScanner = useCodeScanner({
-        codeTypes: ['qr'],
-        onCodeScanned: (codes) => {
-            if (codes.length > 0 && isScannerOpen) {
-                const data = codes[0].value;
-                try {
-                    const payload = JSON.parse(data);
-                    if (payload.c === 'BROADCAST') {
-                        markAttendance(payload.id || selectedClassId);
-                    } else {
-                        Alert.alert('Invalid QR', 'This QR code is not valid for attendance.');
-                    }
-                } catch (e) {
-                    Alert.alert('Scan Error', 'Could not read the QR code.');
-                }
-                setIsScannerOpen(false);
-            }
-        }
-    });
+    // The scanner hook and logic is now fully isolated below to prevent memory locking
 
     const handleBarCodeScanned = ({ data }) => {
         // This is now handled by codeScanner
@@ -479,26 +464,24 @@ export default function AttendanceScreen({ route, navigation }) {
 
                                 <Text style={styles.secTitle}>BY SUBJECT</Text>
                                 {stats?.subjects?.map((s, i) => (
-                                    <Animated.View key={i} entering={FadeInDown.delay(i * 100)}>
-                                        <View style={[styles.subjectCard, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
-                                            <View style={styles.subjectInfo}>
-                                                <Text style={styles.subjectCode}>{s.code}</Text>
-                                                <Text style={styles.subjectName}>{(s.name || 'Unknown Subject').toUpperCase()}</Text>
-                                            </View>
-                                            <View style={styles.subjectStatus}>
-                                                <Text style={[styles.pctText, { color: s.pct >= 75 ? colors.neonGreen : colors.hot }]}>{s.pct}%</Text>
-                                                {s.can_bunk > 0 ? (
-                                                    <View style={styles.bunkBadge}>
-                                                        <Text style={styles.bunkBadgeText}>SAFE: {s.can_bunk} CLASSES</Text>
-                                                    </View>
-                                                ) : (
-                                                    <View style={[styles.bunkBadge, { backgroundColor: colors.hot + '20' }]}>
-                                                        <Text style={[styles.bunkBadgeText, { color: colors.hot }]}>NEED: {s.must_attend} MORE</Text>
-                                                    </View>
-                                                )}
-                                            </View>
+                                    <View key={i} style={[styles.subjectCard, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
+                                        <View style={styles.subjectInfo}>
+                                            <Text style={styles.subjectCode}>{s.code}</Text>
+                                            <Text style={styles.subjectName}>{(s.name || 'Unknown Subject').toUpperCase()}</Text>
                                         </View>
-                                    </Animated.View>
+                                        <View style={styles.subjectStatus}>
+                                            <Text style={[styles.pctText, { color: s.pct >= 75 ? colors.neonGreen : colors.hot }]}>{s.pct}%</Text>
+                                            {s.can_bunk > 0 ? (
+                                                <View style={styles.bunkBadge}>
+                                                    <Text style={styles.bunkBadgeText}>SAFE: {s.can_bunk} CLASSES</Text>
+                                                </View>
+                                            ) : (
+                                                <View style={[styles.bunkBadge, { backgroundColor: colors.hot + '20' }]}>
+                                                    <Text style={[styles.bunkBadgeText, { color: colors.hot }]}>NEED: {s.must_attend} MORE</Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    </View>
                                 ))}
                             </ScrollView>
                         ) : (
@@ -511,36 +494,12 @@ export default function AttendanceScreen({ route, navigation }) {
                 </View>
             </Modal>
 
-            <Modal visible={isScannerOpen} animationType="fade" transparent={false}>
-                {isScannerOpen && (
-                    <View style={styles.scannerModal}>
-                        {device && (
-                            <Camera
-                                style={StyleSheet.absoluteFill}
-                                device={device}
-                                isActive={isScannerOpen}
-                                codeScanner={codeScanner}
-                            />
-                        )}
-                        <View style={styles.scannerOverlay}>
-                            <View style={styles.scannerHeader}>
-                                <TouchableOpacity onPress={() => setIsScannerOpen(false)} style={styles.closeBtn}>
-                                    <Ionicons name="close" size={28} color="#fff" />
-                                </TouchableOpacity>
-                                <Text style={styles.scannerTitle}>QR Scanner</Text>
-                            </View>
-                            <View style={styles.scannerFrame}>
-                                <View style={[styles.corner, styles.tl]} />
-                                <View style={[styles.corner, styles.tr]} />
-                                <View style={[styles.corner, styles.bl]} />
-                                <View style={[styles.corner, styles.br]} />
-                                <View style={styles.scannerLine} />
-                            </View>
-                            <Text style={styles.scannerHint}>Point camera at the QR code</Text>
-                        </View>
-                    </View>
-                )}
-            </Modal>
+            {isScannerOpen && isFocused && (
+                <IsolatedAttendanceScanner 
+                    onClose={() => setIsScannerOpen(false)} 
+                    markAttendance={(id) => markAttendance(id || selectedClassId)} 
+                />
+            )}
 
             <View style={styles.footer}>
                 <View style={[styles.statusPanel, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
@@ -648,4 +607,73 @@ const styles = StyleSheet.create({
     skipText: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textSecondary },
     stepTitle: { fontFamily: 'Tanker', fontSize: 20, color: '#fff', letterSpacing: 1, marginBottom: 20 }
 });
+
+// ── ISOLATED CAMERA SUBSYSTEM ──────────────────────────────────────────────
+// Absolutely prevents camera device hooks from running natively until precisely requested
+function IsolatedAttendanceScanner({ onClose, markAttendance }) {
+    const device = useCameraDevice('back');
+    const isFocused = useIsFocused();
+
+    const codeScanner = useCodeScanner({
+        codeTypes: ['qr'],
+        onCodeScanned: (codes) => {
+            if (codes.length > 0) {
+                const data = codes[0].value;
+                try {
+                    const payload = JSON.parse(data);
+                    if (payload.c === 'BROADCAST') {
+                        markAttendance(payload.id);
+                    } else {
+                        Alert.alert('Invalid QR', 'This QR code is not valid for attendance.');
+                    }
+                } catch (e) {
+                    Alert.alert('Scan Error', 'Could not read the QR code.');
+                }
+                onClose();
+            }
+        }
+    });
+
+    if (!device) {
+        return (
+            <Modal visible={true} animationType="fade" transparent={false}>
+                <View style={[styles.scannerModal, { justifyContent: 'center', alignItems: 'center' }]}>
+                    <ActivityIndicator size="large" color={colors.neonBlue} />
+                    <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { marginTop: 40 }]}>
+                        <Ionicons name="close" size={28} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+            </Modal>
+        );
+    }
+
+    return (
+        <Modal visible={true} animationType="fade" transparent={false}>
+            <View style={styles.scannerModal}>
+                <Camera
+                    style={StyleSheet.absoluteFill}
+                    device={device}
+                    isActive={isFocused}
+                    codeScanner={codeScanner}
+                />
+                <View style={styles.scannerOverlay}>
+                    <View style={styles.scannerHeader}>
+                        <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                            <Ionicons name="close" size={28} color="#fff" />
+                        </TouchableOpacity>
+                        <Text style={styles.scannerTitle}>QR Scanner</Text>
+                    </View>
+                    <View style={styles.scannerFrame}>
+                        <View style={[styles.corner, styles.tl]} />
+                        <View style={[styles.corner, styles.tr]} />
+                        <View style={[styles.corner, styles.bl]} />
+                        <View style={[styles.corner, styles.br]} />
+                        <View style={styles.scannerLine} />
+                    </View>
+                    <Text style={styles.scannerHint}>Point camera at the QR code</Text>
+                </View>
+            </View>
+        </Modal>
+    );
+}
 
