@@ -19,6 +19,7 @@ import RealTimeMapScreen from './src/screens/RealTimeMapScreen';
 import VerificationScreen from './src/screens/VerificationScreen';
 import AIChatbotScreen from './src/screens/AIChatbotScreen';
 import MarketplaceScreen from './src/screens/MarketplaceScreen';
+import MarketplaceChatScreen from './src/screens/MarketplaceChatScreen';
 import FeedbackScreen from './src/screens/FeedbackScreen';
 import OrchestrationScreen from './src/screens/OrchestrationScreen';
 import TestLottieScreen from './src/screens/TestLottieScreen';
@@ -146,6 +147,7 @@ export default function App() {
                 <Stack.Screen name="Verification" component={VerificationScreen} />
                 <Stack.Screen name="AIChatbot" component={AIChatbotScreen} />
                 <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
+                <Stack.Screen name="MarketplaceChat" component={MarketplaceChatScreen} />
                 <Stack.Screen name="Feedback" component={FeedbackScreen} />
                 <Stack.Screen name="TestLottie" component={TestLottieScreen} />
                 <Stack.Screen name="Attendance" component={AttendanceScreen} />
@@ -170,6 +172,7 @@ export default function App() {
                 <Stack.Screen name="Verification" component={VerificationScreen} />
                 <Stack.Screen name="AIChatbot" component={AIChatbotScreen} />
                 <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
+                <Stack.Screen name="MarketplaceChat" component={MarketplaceChatScreen} />
                 <Stack.Screen name="Feedback" component={FeedbackScreen} />
                 <Stack.Screen name="TestLottie" component={TestLottieScreen} />
                 <Stack.Screen name="Attendance" component={AttendanceScreen} />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
     View, 
     Text, 
@@ -11,14 +11,17 @@ import {
     RefreshControl,
     StatusBar,
     Dimensions,
-    ScrollView
+    ScrollView,
+    Image
 } from 'react-native';
 import * as SecureStore from '../utils/storage';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { fetchWithTimeout } from '../utils/api';
+import { API_BASE } from '../api/config';
 import Colors from '../theme/colors';
+import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 
 const { width, height } = Dimensions.get('window');
 
@@ -41,6 +44,14 @@ export default function MarketplaceScreen({ route, navigation }) {
     const [desc, setDesc] = useState('');
     const [price, setPrice] = useState('');
     const [itemCategory, setItemCategory] = useState('Books');
+    const [imageUri, setImageUri] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    // Camera State
+    const [showCamera, setShowCamera] = useState(false);
+    const { hasPermission, requestPermission } = useCameraPermission();
+    const device = useCameraDevice('back');
+    const cameraRef = useRef(null);
 
     const loadItems = async () => {
         try {
@@ -97,8 +108,36 @@ export default function MarketplaceScreen({ route, navigation }) {
         const numPrice = parseFloat(price);
         if (isNaN(numPrice)) return Alert.alert('Invalid Price', 'Price must be a valid number.');
 
+        setIsUploading(true);
         try {
             const token = await SecureStore.getItemAsync('token');
+            let uploadedUrl = null;
+
+            // 1. Upload image if exists
+            if (imageUri) {
+                const formData = new FormData();
+                formData.append('image', {
+                    uri: Platform.OS === 'android' ? 'file://' + imageUri : imageUri,
+                    name: 'item.jpg',
+                    type: 'image/jpeg'
+                });
+
+                const uploadRes = await fetchWithTimeout(`/api/marketplace/upload`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData,
+                    isMultipart: true
+                });
+
+                if (uploadRes.ok && uploadRes.data) {
+                    uploadedUrl = uploadRes.data.image_url;
+                } else {
+                    setIsUploading(false);
+                    return Alert.alert('Upload Failed', 'Could not upload item photo.');
+                }
+            }
+
+            // 2. Post item
             const res = await fetchWithTimeout(`/api/marketplace/items`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -106,19 +145,82 @@ export default function MarketplaceScreen({ route, navigation }) {
                     title, 
                     description: desc, 
                     price: numPrice,
-                    category: itemCategory
+                    category: itemCategory,
+                    image_url: uploadedUrl
                 })
             });
             if (res.ok && res.data) {
                 Alert.alert('Success', 'Item listed successfully.');
                 setIsAdding(false); 
-                setTitle(''); setDesc(''); setPrice(''); setItemCategory('Books');
+                setTitle(''); setDesc(''); setPrice(''); setItemCategory('Books'); setImageUri(null);
                 loadItems();
             } else {
                 Alert.alert('Error', res.data?.error || 'Could not post item.');
             }
         } catch (e) {
             Alert.alert('Network Error', 'Failed to connect to the server.');
+        }
+        setIsUploading(false);
+    };
+
+    const handleReaction = async (itemId) => {
+        try {
+            const token = await SecureStore.getItemAsync('token');
+            const res = await fetchWithTimeout(`/api/marketplace/items/react`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ itemId })
+            });
+            if (res.ok) {
+                // Optimistic UI update or reload
+                loadItems();
+            }
+        } catch (e) {}
+    };
+
+    const handleChat = async (item) => {
+        try {
+            const token = await SecureStore.getItemAsync('token');
+            const res = await fetchWithTimeout(`/api/marketplace/chat/start`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ itemId: item.id, sellerId: item.seller_id })
+            });
+
+            if (res.ok && res.data) {
+                navigation.navigate('MarketplaceChat', {
+                    conversationId: res.data.conversation_id,
+                    itemTitle: item.title,
+                    itemImage: item.image_url,
+                    sellerName: item.seller_name,
+                    sellerId: item.seller_id,
+                    user: user
+                });
+            }
+        } catch (e) {
+            Alert.alert('Error', 'Failed to start chat.');
+        }
+    };
+
+    const takePhoto = async () => {
+        if (!hasPermission) {
+            const result = await requestPermission();
+            if (!result) return Alert.alert('Permission Denied', 'Camera permission is required to take photos.');
+        }
+        setShowCamera(true);
+    };
+
+    const handleCapture = async () => {
+        if (cameraRef.current) {
+            try {
+                const photo = await cameraRef.current.takePhoto({
+                    flash: 'off'
+                });
+                setImageUri(photo.path);
+                setShowCamera(false);
+            } catch (e) {
+                Alert.alert('Error', 'Failed to capture photo');
+            }
         }
     };
 
@@ -141,11 +243,24 @@ export default function MarketplaceScreen({ route, navigation }) {
     const renderItem = ({ item, index }) => (
         <Animated.View entering={FadeInDown.delay(index * 50)} style={styles.itemWrapper}>
             <View style={styles.card}>
-                <View style={styles.cardImagePlaceholder}>
-                    <Ionicons name="cube-outline" size={32} color={Colors.textDisabled} />
+                <View style={styles.cardImageContainer}>
+                    {item.image_url ? (
+                        <Image source={{ uri: API_BASE + item.image_url }} style={styles.cardImage} />
+                    ) : (
+                        <View style={styles.cardImagePlaceholder}>
+                            <Ionicons name="cube-outline" size={32} color={Colors.textDisabled} />
+                        </View>
+                    )}
                     <View style={styles.categoryTag}>
                         <Text style={styles.categoryTagText}>{item.category}</Text>
                     </View>
+                    <TouchableOpacity 
+                        style={[styles.reactBtn, item.has_reacted && styles.reactBtnActive]} 
+                        onPress={() => handleReaction(item.id)}
+                    >
+                        <Ionicons name={item.has_reacted ? "heart" : "heart-outline"} size={16} color={item.has_reacted ? Colors.danger : "#fff"} />
+                        {item.reaction_count > 0 && <Text style={styles.reactionCount}>{item.reaction_count}</Text>}
+                    </TouchableOpacity>
                 </View>
                 
                 <View style={styles.cardContent}>
@@ -167,7 +282,7 @@ export default function MarketplaceScreen({ route, navigation }) {
                                 <Ionicons name="trash-outline" size={16} color={Colors.danger} />
                             </TouchableOpacity>
                         ) : (
-                            <TouchableOpacity style={styles.contactBtn}>
+                            <TouchableOpacity style={styles.contactBtn} onPress={() => handleChat(item)}>
                                 <Text style={styles.contactText}>Chat</Text>
                             </TouchableOpacity>
                         )}
@@ -260,14 +375,37 @@ export default function MarketplaceScreen({ route, navigation }) {
                     </View>
                     
                     <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Item Photo</Text>
+                        <View style={styles.photoUploadContainer}>
+                            {imageUri ? (
+                                <View style={styles.previewContainer}>
+                                    <Image source={{ uri: 'file://' + imageUri }} style={styles.previewImage} />
+                                    <TouchableOpacity style={styles.removePhoto} onPress={() => setImageUri(null)}>
+                                        <Ionicons name="close-circle" size={24} color={Colors.danger} />
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <TouchableOpacity style={styles.photoPlaceholder} onPress={takePhoto}>
+                                    <Ionicons name="camera-outline" size={32} color={Colors.textMuted} />
+                                    <Text style={styles.photoPlaceholderText}>Capture Item</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+
+                    <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>Description</Text>
                         <TextInput style={[styles.input, styles.inputDesc]} placeholder="Condition, edition, specs..." placeholderTextColor={Colors.textDisabled} multiline value={desc} onChangeText={setDesc} textAlignVertical="top" />
                     </View>
                     
-                    <TouchableOpacity style={styles.submitBtn} onPress={handleAddItem}>
+                    <TouchableOpacity style={styles.submitBtn} onPress={handleAddItem} disabled={isUploading}>
                         <LinearGradient colors={Colors.gradientPrimary} style={styles.submitGrad}>
-                            <Text style={styles.submitText}>List Item</Text>
-                            <Ionicons name="arrow-forward" size={18} color="#fff" />
+                            {isUploading ? <ActivityIndicator size="small" color="#fff" /> : (
+                                <>
+                                    <Text style={styles.submitText}>List Item</Text>
+                                    <Ionicons name="arrow-forward" size={18} color="#fff" />
+                                </>
+                            )}
                         </LinearGradient>
                     </TouchableOpacity>
                 </ScrollView>
@@ -284,13 +422,33 @@ export default function MarketplaceScreen({ route, navigation }) {
                     ListEmptyComponent={
                         !loading && (
                             <View style={styles.emptyState}>
-                                <Ionicons name="basket-outline" size={48} color={Colors.textDisabled} />
+                                <Ionicons name="basket-outline" size={48} color={Colors.textMuted} />
                                 <Text style={styles.emptyText}>No items found</Text>
                                 <Text style={styles.emptySub}>Try adjusting your search or filters</Text>
                             </View>
                         )
                     }
                 />
+            )}
+
+            {showCamera && (
+                <View style={StyleSheet.absoluteFill}>
+                    <Camera
+                        ref={cameraRef}
+                        style={StyleSheet.absoluteFill}
+                        device={device}
+                        isActive={showCamera}
+                        photo={true}
+                    />
+                    <View style={styles.cameraOverlay}>
+                        <TouchableOpacity style={styles.cameraClose} onPress={() => setShowCamera(false)}>
+                            <Ionicons name="close" size={30} color="#fff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.captureBtn} onPress={handleCapture}>
+                            <View style={styles.captureBtnInner} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
             )}
         </View>
     );
@@ -319,9 +477,15 @@ const styles = StyleSheet.create({
     itemWrapper: { width: (width - 44) / 2, marginBottom: 16 },
     
     card: { backgroundColor: Colors.bgCard, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: Colors.border },
-    cardImagePlaceholder: { height: 120, backgroundColor: 'rgba(255,255,255,0.02)', justifyContent: 'center', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: Colors.border },
+    cardImageContainer: { height: 120, borderBottomWidth: 1, borderBottomColor: Colors.border, backgroundColor: 'rgba(255,255,255,0.02)' },
+    cardImage: { width: '100%', height: '100%' },
+    cardImagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     categoryTag: { position: 'absolute', top: 10, left: 10, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
     categoryTagText: { fontFamily: 'Satoshi-Bold', fontSize: 9, color: '#fff' },
+    
+    reactBtn: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 4 },
+    reactBtnActive: { backgroundColor: 'rgba(255, 61, 113, 0.2)', borderColor: Colors.danger, borderWidth: 1 },
+    reactionCount: { fontFamily: 'Satoshi-Bold', fontSize: 10, color: '#fff' },
     
     cardContent: { padding: 12 },
     itemTitle: { fontFamily: 'Satoshi-Black', fontSize: 13, color: '#fff', marginBottom: 4 },
@@ -346,6 +510,18 @@ const styles = StyleSheet.create({
     inputLabel: { fontFamily: 'Satoshi-Bold', fontSize: 13, color: Colors.textSecondary, marginBottom: 8, marginLeft: 4 },
     input: { backgroundColor: Colors.bgCard, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, fontFamily: 'Satoshi-Medium', fontSize: 14, color: '#fff', borderWidth: 1, borderColor: Colors.border },
     inputDesc: { height: 100, paddingTop: 14 },
+    
+    photoUploadContainer: { height: 150, borderRadius: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.bgCard, overflow: 'hidden' },
+    photoPlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
+    photoPlaceholderText: { fontFamily: 'Satoshi-Bold', fontSize: 12, color: Colors.textMuted },
+    previewContainer: { flex: 1 },
+    previewImage: { width: '100%', height: '100%' },
+    removePhoto: { position: 'absolute', top: 10, right: 10 },
+
+    cameraOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 40 },
+    cameraClose: { position: 'absolute', top: 60, left: 24 },
+    captureBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center' },
+    captureBtnInner: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#fff' },
     
     catSelectBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: Colors.glass, borderWidth: 1, borderColor: Colors.border },
     catSelectBtnActive: { backgroundColor: Colors.primaryGlass, borderColor: Colors.primary + '50' },
