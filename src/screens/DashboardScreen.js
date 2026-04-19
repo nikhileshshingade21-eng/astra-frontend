@@ -38,9 +38,7 @@ import AstraTouchable from '../components/AstraTouchable';
 
 const { width } = Dimensions.get('window');
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+// V3.2.7 FIX: Removed Experimental LayoutAnimation to prevent conflicts with Reanimated 3
 
 // ── Time Helpers ─────────────────────────────────
 const formatTime = (time) => {

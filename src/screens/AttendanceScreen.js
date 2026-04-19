@@ -42,9 +42,7 @@ import AstraTouchable from '../components/AstraTouchable';
 
 const { width, height } = Dimensions.get('window');
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+// V3.2.7 FIX: Removed Experimental LayoutAnimation to prevent conflicts with Reanimated 3
 
 const colors = Colors;
 
@@ -451,82 +449,86 @@ export default function AttendanceScreen({ route, navigation }) {
                             </TouchableOpacity>
                         </View>
                         
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-                            <View style={styles.statsOverview}>
-                                <View style={styles.statBox}>
-                                    <Text style={styles.statVal}>{stats?.percentage || 0}%</Text>
-                                    <Text style={styles.statLab}>ATTENDANCE</Text>
-                                </View>
-                                <View style={styles.statBox}>
-                                    {stats?.bunk_stats?.can_bunk > 0 ? (
-                                        <>
-                                            <Text style={[styles.statVal, { color: colors.neonGreen }]}>{stats.bunk_stats.can_bunk}</Text>
-                                            <Text style={styles.statLab}>CAN SKIP</Text>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Text style={[styles.statVal, { color: colors.hot }]}>{stats?.bunk_stats?.must_attend || 0}</Text>
-                                            <Text style={styles.statLab}>MUST ATTEND</Text>
-                                        </>
-                                    )}
-                                </View>
-                            </View>
-
-                            <Text style={styles.secTitle}>BY SUBJECT</Text>
-                            {stats?.subjects?.map((s, i) => (
-                                <Animated.View key={i} entering={FadeInDown.delay(i * 100)}>
-                                    <View style={[styles.subjectCard, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
-                                        <View style={styles.subjectInfo}>
-                                            <Text style={styles.subjectCode}>{s.code}</Text>
-                                            <Text style={styles.subjectName}>{s.name.toUpperCase()}</Text>
-                                        </View>
-                                        <View style={styles.subjectStatus}>
-                                            <Text style={[styles.pctText, { color: s.pct >= 75 ? colors.neonGreen : colors.hot }]}>{s.pct}%</Text>
-                                            {s.can_bunk > 0 ? (
-                                                <View style={styles.bunkBadge}>
-                                                    <Text style={styles.bunkBadgeText}>SAFE: {s.can_bunk} CLASSES</Text>
-                                                </View>
-                                            ) : (
-                                                <View style={[styles.bunkBadge, { backgroundColor: colors.hot + '20' }]}>
-                                                    <Text style={[styles.bunkBadgeText, { color: colors.hot }]}>NEED: {s.must_attend} MORE</Text>
-                                                </View>
-                                            )}
-                                        </View>
+                        {isBunkModalOpen && (
+                            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+                                <View style={styles.statsOverview}>
+                                    <View style={styles.statBox}>
+                                        <Text style={styles.statVal}>{stats?.percentage || 0}%</Text>
+                                        <Text style={styles.statLab}>ATTENDANCE</Text>
                                     </View>
-                                </Animated.View>
-                            ))}
-                        </ScrollView>
+                                    <View style={styles.statBox}>
+                                        {stats?.bunk_stats?.can_bunk > 0 ? (
+                                            <>
+                                                <Text style={[styles.statVal, { color: colors.neonGreen }]}>{stats.bunk_stats.can_bunk}</Text>
+                                                <Text style={styles.statLab}>CAN SKIP</Text>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Text style={[styles.statVal, { color: colors.hot }]}>{stats?.bunk_stats?.must_attend || 0}</Text>
+                                                <Text style={styles.statLab}>MUST ATTEND</Text>
+                                            </>
+                                        )}
+                                    </View>
+                                </View>
+
+                                <Text style={styles.secTitle}>BY SUBJECT</Text>
+                                {stats?.subjects?.map((s, i) => (
+                                    <Animated.View key={i} entering={FadeInDown.delay(i * 100)}>
+                                        <View style={[styles.subjectCard, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
+                                            <View style={styles.subjectInfo}>
+                                                <Text style={styles.subjectCode}>{s.code}</Text>
+                                                <Text style={styles.subjectName}>{(s.name || 'Unknown Subject').toUpperCase()}</Text>
+                                            </View>
+                                            <View style={styles.subjectStatus}>
+                                                <Text style={[styles.pctText, { color: s.pct >= 75 ? colors.neonGreen : colors.hot }]}>{s.pct}%</Text>
+                                                {s.can_bunk > 0 ? (
+                                                    <View style={styles.bunkBadge}>
+                                                        <Text style={styles.bunkBadgeText}>SAFE: {s.can_bunk} CLASSES</Text>
+                                                    </View>
+                                                ) : (
+                                                    <View style={[styles.bunkBadge, { backgroundColor: colors.hot + '20' }]}>
+                                                        <Text style={[styles.bunkBadgeText, { color: colors.hot }]}>NEED: {s.must_attend} MORE</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </View>
+                                    </Animated.View>
+                                ))}
+                            </ScrollView>
+                        )}
                     </View>
                 </View>
             </Modal>
 
             <Modal visible={isScannerOpen} animationType="fade" transparent={false}>
-                <View style={styles.scannerModal}>
-                    {device && (
-                        <Camera
-                            style={StyleSheet.absoluteFill}
-                            device={device}
-                            isActive={isScannerOpen}
-                            codeScanner={codeScanner}
-                        />
-                    )}
-                    <View style={styles.scannerOverlay}>
-                        <View style={styles.scannerHeader}>
-                            <TouchableOpacity onPress={() => setIsScannerOpen(false)} style={styles.closeBtn}>
-                                <Ionicons name="close" size={28} color="#fff" />
-                            </TouchableOpacity>
-                            <Text style={styles.scannerTitle}>QR Scanner</Text>
+                {isScannerOpen && (
+                    <View style={styles.scannerModal}>
+                        {device && (
+                            <Camera
+                                style={StyleSheet.absoluteFill}
+                                device={device}
+                                isActive={isScannerOpen}
+                                codeScanner={codeScanner}
+                            />
+                        )}
+                        <View style={styles.scannerOverlay}>
+                            <View style={styles.scannerHeader}>
+                                <TouchableOpacity onPress={() => setIsScannerOpen(false)} style={styles.closeBtn}>
+                                    <Ionicons name="close" size={28} color="#fff" />
+                                </TouchableOpacity>
+                                <Text style={styles.scannerTitle}>QR Scanner</Text>
+                            </View>
+                            <View style={styles.scannerFrame}>
+                                <View style={[styles.corner, styles.tl]} />
+                                <View style={[styles.corner, styles.tr]} />
+                                <View style={[styles.corner, styles.bl]} />
+                                <View style={[styles.corner, styles.br]} />
+                                <View style={styles.scannerLine} />
+                            </View>
+                            <Text style={styles.scannerHint}>Point camera at the QR code</Text>
                         </View>
-                        <View style={styles.scannerFrame}>
-                            <View style={[styles.corner, styles.tl]} />
-                            <View style={[styles.corner, styles.tr]} />
-                            <View style={[styles.corner, styles.bl]} />
-                            <View style={[styles.corner, styles.br]} />
-                            <View style={styles.scannerLine} />
-                        </View>
-                        <Text style={styles.scannerHint}>Point camera at the QR code</Text>
                     </View>
-                </View>
+                )}
             </Modal>
 
             <View style={styles.footer}>
@@ -557,7 +559,7 @@ const styles = StyleSheet.create({
 
     classSection: { marginBottom: 30 },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    secLabel: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.textDim, letterSpacing: 3 },
+    secLabel: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.textSecondary, letterSpacing: 3 },
     scanTrigger: { borderRadius: 12, overflow: 'hidden' },
     scanTriggerGrad: { paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
     scanTriggerText: { fontFamily: 'Satoshi-Black', fontSize: 9, color: '#fff', letterSpacing: 1 },
@@ -566,14 +568,14 @@ const styles = StyleSheet.create({
     classChip: { borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'transparent' },
     classChipActive: { borderColor: colors.neonBlue },
     chipGlass: { paddingHorizontal: 20, paddingVertical: 12 },
-    chipText: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textDim, letterSpacing: 1 },
+    chipText: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textSecondary, letterSpacing: 1 },
 
     gpsSection: { paddingHorizontal: 24, marginBottom: 40 },
     gpsCard: { flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
     gpsDot: { width: 8, height: 8, borderRadius: 4, marginRight: 15 },
     gpsInfo: { flex: 1 },
     gpsLabel: { fontFamily: 'Satoshi-Black', fontSize: 10, color: '#fff', letterSpacing: 2 },
-    gpsCoords: { fontFamily: 'Satoshi-Bold', fontSize: 9, color: colors.textDim, marginTop: 4 },
+    gpsCoords: { fontFamily: 'Satoshi-Bold', fontSize: 9, color: colors.textSecondary, marginTop: 4 },
     retryBtn: { padding: 8 },
 
     verifyHub: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -582,7 +584,7 @@ const styles = StyleSheet.create({
     verifyBtnOff: { opacity: 0.4 },
     btnGlass: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     scanLine: { position: 'absolute', left: 0, right: 0, height: 3, shadowColor: colors.neonBlue, shadowOpacity: 0.8, shadowRadius: 10, elevation: 10 },
-    hintText: { marginTop: 30, fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textDim, letterSpacing: 2 },
+    hintText: { marginTop: 30, fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textSecondary, letterSpacing: 2 },
 
     modalOverlay: { flex: 1, justifyContent: 'flex-end' },
     bunkContent: { height: height * 0.8, backgroundColor: colors.bg, borderTopLeftRadius: 40, borderTopRightRadius: 40, borderWidth: 1, borderColor: colors.border, padding: 30 },
@@ -592,12 +594,12 @@ const styles = StyleSheet.create({
     statsOverview: { flexDirection: 'row', gap: 15, marginBottom: 40 },
     statBox: { flex: 1, padding: 24, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
     statVal: { fontFamily: 'Tanker', fontSize: 32, color: colors.neonBlue },
-    statLab: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.textDim, letterSpacing: 2, marginTop: 5 },
+    statLab: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.textSecondary, letterSpacing: 2, marginTop: 5 },
 
-    secTitle: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textDim, letterSpacing: 3, marginBottom: 20 },
+    secTitle: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textSecondary, letterSpacing: 3, marginBottom: 20 },
     subjectCard: { padding: 20, borderRadius: 24, borderWidth: 1, borderColor: colors.border, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' },
     subjectInfo: { flex: 1 },
-    subjectCode: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textDim, marginBottom: 4 },
+    subjectCode: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textSecondary, marginBottom: 4 },
     subjectName: { fontFamily: 'Tanker', fontSize: 16, color: '#fff' },
     subjectStatus: { alignItems: 'flex-end' },
     pctText: { fontFamily: 'Tanker', fontSize: 20, marginBottom: 5 },
@@ -621,18 +623,18 @@ const styles = StyleSheet.create({
     footer: { padding: 24, paddingBottom: 50 },
     statusPanel: { flexDirection: 'row', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', justifyContent: 'space-between' },
     statusItem: { alignItems: 'center', flex: 1 },
-    statusLab: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.textDim, letterSpacing: 1, marginBottom: 5 },
+    statusLab: { fontFamily: 'Satoshi-Black', fontSize: 8, color: colors.textSecondary, letterSpacing: 1, marginBottom: 5 },
     statusVal: { fontFamily: 'Tanker', fontSize: 14, color: '#fff' },
     hLine: { width: 1, height: '80%', backgroundColor: colors.border },
 
     fallbackBtn: { marginTop: 30, padding: 10 },
-    fallbackText: { fontFamily: 'Satoshi-Black', fontSize: 9, color: 'rgba(255,255,255,0.2)', letterSpacing: 1 },
+    fallbackText: { fontFamily: 'Satoshi-Black', fontSize: 9, color: 'rgba(255,255,255,0.7)', letterSpacing: 1 },
     passwordSurface: { width: '100%', alignItems: 'center' },
-    inputLabel: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.textDim, letterSpacing: 2, marginBottom: 5 },
+    inputLabel: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.textSecondary, letterSpacing: 2, marginBottom: 5 },
     input: { height: 50, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 16, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 20, color: '#fff', fontFamily: 'Satoshi-Bold' },
     verifyBtnSmall: { marginTop: 20, paddingHorizontal: 30, paddingVertical: 15, borderRadius: 12 },
     btnTextThin: { fontFamily: 'Tanker', fontSize: 14, color: '#fff' },
-    skipText: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textDim },
+    skipText: { fontFamily: 'Satoshi-Black', fontSize: 10, color: colors.textSecondary },
     stepTitle: { fontFamily: 'Tanker', fontSize: 20, color: '#fff', letterSpacing: 1, marginBottom: 20 }
 });
 
