@@ -46,17 +46,31 @@ export default function MarketplaceChatScreen({ route, navigation }) {
     const setupSocket = async () => {
         const token = await SecureStore.getItemAsync('token');
         socketRef.current = io(API_BASE, {
+            transports: ['websocket'],
             extraHeaders: { Authorization: `Bearer ${token}` }
         });
 
         socketRef.current.on('connect', () => {
             socketRef.current.emit('join_user', user.id);
+            console.log('[CHAT_SOCKET] Connected, joined room:', user.id);
         });
 
         socketRef.current.on('marketplace_message', (data) => {
-            if (data.conversation_id == conversationId) {
-                setMessages(prev => [...prev, data.message]);
+            // Backend sends { conversation_id, message } — unwrap if wrapped
+            const payload = data?.data || data;
+            const convId = payload?.conversation_id;
+            const msg = payload?.message;
+            if (convId == conversationId && msg) {
+                // Only add if not already present (avoid duplicate from own send)
+                setMessages(prev => {
+                    if (prev.some(m => m.id === msg.id)) return prev;
+                    return [...prev, msg];
+                });
             }
+        });
+
+        socketRef.current.on('disconnect', () => {
+            console.log('[CHAT_SOCKET] Disconnected');
         });
     };
 

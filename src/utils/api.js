@@ -16,14 +16,19 @@ export const fetchWithTimeout = async (endpoint, options = {}) => {
     try {
         const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
         
+        // Build headers — for multipart, omit Content-Type entirely so RN sets the boundary
+        const headers = {
+            ...fetchOptions.headers,
+            'bypass-tunnel-reminder': 'true'
+        };
+        if (!options.isMultipart) {
+            headers['Content-Type'] = 'application/json';
+        }
+
         const response = await fetch(url, {
             ...fetchOptions,
             signal: controller.signal,
-            headers: {
-                'Content-Type': options.isMultipart ? undefined : 'application/json',
-                ...fetchOptions.headers,
-                'bypass-tunnel-reminder': 'true'
-            }
+            headers
         });
         
         clearTimeout(id);

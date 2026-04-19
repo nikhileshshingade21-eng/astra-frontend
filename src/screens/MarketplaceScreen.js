@@ -23,6 +23,7 @@ import { fetchWithTimeout } from '../utils/api';
 import { API_BASE } from '../api/config';
 import Colors from '../theme/colors';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 const { width, height } = Dimensions.get('window');
 
@@ -225,6 +226,25 @@ export default function MarketplaceScreen({ route, navigation }) {
         }
     };
 
+    const pickFromGallery = () => {
+        launchImageLibrary(
+            { mediaType: 'photo', quality: 0.8, maxWidth: 1200, maxHeight: 1200 },
+            (response) => {
+                if (response.didCancel) return;
+                if (response.errorCode) {
+                    Alert.alert('Error', response.errorMessage || 'Could not open gallery');
+                    return;
+                }
+                const asset = response.assets?.[0];
+                if (asset?.uri) {
+                    // Remove file:// prefix if present for consistency with camera path
+                    const uri = asset.uri.startsWith('file://') ? asset.uri.replace('file://', '') : asset.uri;
+                    setImageUri(uri);
+                }
+            }
+        );
+    };
+
     const handleDelete = async (id) => {
         Alert.alert("Remove Item", "Are you sure you want to delete this listing?", [
             { text: "Cancel", style: "cancel" },
@@ -382,7 +402,7 @@ export default function MarketplaceScreen({ route, navigation }) {
                     
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>Item Photo</Text>
-                        <View style={styles.photoUploadContainer}>
+                            <View style={styles.photoUploadContainer}>
                             {imageUri ? (
                                 <View style={styles.previewContainer}>
                                     <Image source={{ uri: 'file://' + imageUri }} style={styles.previewImage} />
@@ -391,10 +411,17 @@ export default function MarketplaceScreen({ route, navigation }) {
                                     </TouchableOpacity>
                                 </View>
                             ) : (
-                                <TouchableOpacity style={styles.photoPlaceholder} onPress={takePhoto}>
-                                    <Ionicons name="camera-outline" size={32} color={Colors.textMuted} />
-                                    <Text style={styles.photoPlaceholderText}>Capture Item</Text>
-                                </TouchableOpacity>
+                                <View style={styles.photoButtonsRow}>
+                                    <TouchableOpacity style={styles.photoOptionBtn} onPress={takePhoto}>
+                                        <Ionicons name="camera-outline" size={28} color={Colors.primary} />
+                                        <Text style={styles.photoOptionText}>Camera</Text>
+                                    </TouchableOpacity>
+                                    <View style={styles.photoDivider} />
+                                    <TouchableOpacity style={styles.photoOptionBtn} onPress={pickFromGallery}>
+                                        <Ionicons name="images-outline" size={28} color={Colors.primary} />
+                                        <Text style={styles.photoOptionText}>Gallery</Text>
+                                    </TouchableOpacity>
+                                </View>
                             )}
                         </View>
                     </View>
@@ -518,6 +545,10 @@ const styles = StyleSheet.create({
     inputDesc: { height: 100, paddingTop: 14 },
     
     photoUploadContainer: { height: 150, borderRadius: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.bgCard, overflow: 'hidden' },
+    photoButtonsRow: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+    photoOptionBtn: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 6 },
+    photoOptionText: { fontFamily: 'Satoshi-Bold', fontSize: 12, color: Colors.primary },
+    photoDivider: { width: 1, height: 60, backgroundColor: Colors.border },
     photoPlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
     photoPlaceholderText: { fontFamily: 'Satoshi-Bold', fontSize: 12, color: Colors.textMuted },
     previewContainer: { flex: 1 },
