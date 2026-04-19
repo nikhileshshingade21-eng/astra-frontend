@@ -69,7 +69,7 @@ export default function AuthScreen({ route, navigation }) {
     const [newPass, setNewPass] = useState('');
 
     const PROGRAMMES = ['B.Tech CSC', 'B.Tech CSD', 'B.Tech AIML', 'B.Tech IT', 'B.Tech ECE', 'B.Tech CIVIL', 'B.Tech MECH'];
-    const SECTIONS = ['A1', 'A2', 'A3', 'A4', 'A5', 'C1', 'C2', 'C3', 'C4', 'C5', 'D1', 'D2', 'D3', 'CS', '1', 'General'];
+    const SECTIONS = ['A', 'A1', 'A2', 'A3', 'A4', 'A5', 'B1', 'B2', 'B3', 'B4', 'B5', 'C1', 'C2', 'C3', 'C4', 'C5', 'D1', 'D2', 'D3', 'CS', 'AI', 'DS', '1', 'General'];
 
     useEffect(() => {
         // Enforce Biometric Policy on Load — NON-BLOCKING
