@@ -72,17 +72,22 @@ export default function AuthScreen({ route, navigation }) {
     const SECTIONS = ['A1', 'A2', 'A3', 'A4', 'A5', 'C1', 'C2', 'C3', 'C4', 'C5', 'D1', 'D2', 'D3', 'CS', '1', 'General'];
 
     useEffect(() => {
-        // Enforce Biometric Policy on Load
-        (async () => {
-            const hasBio = await isBiometricsAvailable();
-            if (!hasBio) {
-                Alert.alert(
-                    'Biometrics Required',
-                    'Fingerprint or Face ID is needed to use this app. Please enable it in your phone settings.',
-                    [{ text: 'Exit' }]
-                );
+        // Enforce Biometric Policy on Load — NON-BLOCKING
+        const timer = setTimeout(async () => {
+            try {
+                const hasBio = await isBiometricsAvailable();
+                if (!hasBio) {
+                    Alert.alert(
+                        'Biometrics Required',
+                        'Fingerprint or Face ID is needed to use this app. Please enable it in your phone settings.',
+                        [{ text: 'Exit' }]
+                    );
+                }
+            } catch (e) {
+                console.warn('[AUTH] Biometric check failed silently:', e.message);
             }
-        })();
+        }, 500); // Delay to let UI render first
+        return () => clearTimeout(timer);
     }, []);
 
     const nextStep = () => {
@@ -97,10 +102,18 @@ export default function AuthScreen({ route, navigation }) {
             if (!regId || !regName) return setFormError('Please fill in all required fields');
         }
 
-        const hasBio = await isBiometricsAvailable();
-        if (!hasBio) {
-            setFormError('Please enable fingerprint or Face ID on your phone');
-            return;
+        // Non-blocking biometric check with timeout
+        try {
+            const bioPromise = isBiometricsAvailable();
+            const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(true), 3000));
+            const hasBio = await Promise.race([bioPromise, timeoutPromise]);
+            if (!hasBio) {
+                setFormError('Please enable fingerprint or Face ID on your phone');
+                return;
+            }
+        } catch (e) {
+            console.warn('[AUTH] Biometric check skipped:', e.message);
+            // Don't block registration if biometric check fails
         }
 
         if (role === 'student' && tab === 'register') {
@@ -109,6 +122,7 @@ export default function AuthScreen({ route, navigation }) {
                 const deviceId = await getUniqueDeviceId();
                 const res = await fetchWithTimeout(`/api/auth/verify`, {
                     method: 'POST',
+                    timeout: 10000, // 10s max, not 90s
                     body: JSON.stringify({ roll_number: regId.trim(), device_id: deviceId })
                 });
                 if (!res.ok) {
@@ -302,6 +316,7 @@ export default function AuthScreen({ route, navigation }) {
     // --- RENDER VIEWS ---
 
     if (step === 1) return (
+        <View style={{flex: 1}}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <LinearGradient colors={['#020617', '#0f172a']} style={StyleSheet.absoluteFill} />
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -404,11 +419,11 @@ export default function AuthScreen({ route, navigation }) {
                     </View>
                 )}
 
-                <AstraTouchable style={styles.submitAction} onPress={handleInitialAuth} disabled={loading}>
+                <TouchableOpacity style={styles.submitAction} onPress={handleInitialAuth} disabled={loading} activeOpacity={0.8}>
                     <LinearGradient colors={[roleColor, '#000']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.submitGradient}>
-                        {loading ? <AstraLottie type="loading" size={60} /> : <Text style={styles.submitText}>CONTINUE</Text>}
+                        {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.submitText}>CONTINUE</Text>}
                     </LinearGradient>
-                </AstraTouchable>
+                </TouchableOpacity>
 
                 {tab === 'login' && (
                     <TouchableOpacity style={styles.ssoAction} onPress={() => Alert.alert('College SSO', 'College SSO integration is coming soon. Please use your Roll Number and Password to log in.')}>
@@ -419,8 +434,9 @@ export default function AuthScreen({ route, navigation }) {
                     </TouchableOpacity>
                 )}
             </View>
-            {renderSelectionModal()}
         </ScrollView>
+        {renderSelectionModal()}
+        </View>
     );
 
     if (step === 2) return (
