@@ -8,7 +8,6 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Alert,
-    LayoutAnimation,
     Platform,
     UIManager,
     Dimensions,
@@ -22,10 +21,6 @@ import { API_BASE } from '../api/config';
 import { fetchWithTimeout } from '../utils/api';
 
 const { width } = Dimensions.get('window');
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const colors = {
     bg: '#020617',
@@ -57,7 +52,6 @@ export default function TrackerScreen({ route, navigation }) {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok && res.data) {
-                if (!silent) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setSelectedStudent({
                     name: (res.data.user?.name || 'Unknown Node').toUpperCase(),
                     roll: res.data.user?.roll_number || 'N/A',

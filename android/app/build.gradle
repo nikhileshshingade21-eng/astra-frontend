@@ -19,8 +19,8 @@ android {
         applicationId "com.nikhil.astra"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 7
-        versionName "3.3.0"
+        versionCode 8
+        versionName "3.3.1"
         multiDexEnabled true
     }
     signingConfigs {

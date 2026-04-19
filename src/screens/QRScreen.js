@@ -26,10 +26,6 @@ import Animated, {
 
 const { width } = Dimensions.get('window');
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 const colors = {
     bg: '#020617',
     glass: 'rgba(255, 255, 255, 0.03)',

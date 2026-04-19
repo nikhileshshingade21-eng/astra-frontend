@@ -29,7 +29,6 @@ import Animated, {
     withTiming,
     withDelay,
     withSequence,
-    LayoutAnimation,
     interpolate
 } from 'react-native-reanimated';
 import { fetchWithTimeout } from '../utils/api';
@@ -39,10 +38,6 @@ import useAppUpdate from '../hooks/useAppUpdate';
 import UpdateModal from '../components/UpdateModal';
 
 const { width, height } = Dimensions.get('window');
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const colors = Colors;
 
@@ -231,7 +226,6 @@ export default function AnnouncementsScreen() {
         return (
             <Animated.View entering={FadeInDown.delay(index * 100)}>
                 <AstraTouchable activeOpacity={0.9} onPress={() => {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setSelectedItem(item);
                 }}>
                     <View blurType="dark" blurAmount={3} style={[styles.card, { borderColor: theme.main + '30' }]}>
@@ -349,7 +343,6 @@ export default function AnnouncementsScreen() {
                     <TouchableOpacity 
                         style={[styles.navTab, mode === 'broadcasts' && styles.navTabActive]} 
                         onPress={() => {
-                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                             setMode('broadcasts');
                         }}
                     >
@@ -359,7 +352,6 @@ export default function AnnouncementsScreen() {
                     <TouchableOpacity 
                         style={[styles.navTab, mode === 'activity' && styles.navTabActive]} 
                         onPress={() => {
-                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                             setMode('activity');
                         }}
                     >

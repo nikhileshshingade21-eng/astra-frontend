@@ -9,7 +9,6 @@ import {
     StatusBar,
     Dimensions,
     Platform,
-    UIManager,
     ActivityIndicator
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -21,8 +20,7 @@ import Animated, {
     useAnimatedStyle, 
     withRepeat, 
     withTiming, 
-    withSequence,
-    LayoutAnimation
+    withSequence
 } from 'react-native-reanimated';
 import { fetchWithTimeout } from '../utils/api';
 import Colors from '../theme/colors';
@@ -31,10 +29,6 @@ import { API_BASE } from '../api/config';
 
 const { width } = Dimensions.get('window');
 const VERIFICATION_TIME = 45;
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const colors = Colors;
 

@@ -8,7 +8,6 @@ import {
     ActivityIndicator,
     FlatList,
     Dimensions,
-    LayoutAnimation,
     Platform,
     UIManager,
     Modal
@@ -25,10 +24,6 @@ import { API_BASE } from '../api/config';
 import { fetchWithTimeout } from '../utils/api';
 
 const { width } = Dimensions.get('window');
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const colors = {
     bg: '#020617',

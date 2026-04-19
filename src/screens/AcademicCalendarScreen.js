@@ -8,7 +8,6 @@ import {
     RefreshControl,
     Dimensions,
     StatusBar,
-    LayoutAnimation,
     Platform,
     UIManager,
     TextInput,
@@ -23,10 +22,6 @@ import { fetchWithTimeout } from '../utils/api';
 import * as SecureStore from '../utils/storage';
 
 const { width } = Dimensions.get('window');
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const TYPE_CONFIG = {
     holiday: { color: Colors.danger, label: 'Holiday', icon: 'sunny-outline' },

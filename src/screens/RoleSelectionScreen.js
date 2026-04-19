@@ -6,7 +6,6 @@ import {
     TouchableOpacity,
     Dimensions,
     Image,
-    LayoutAnimation,
     Platform,
     UIManager
 } from 'react-native';
@@ -14,10 +13,6 @@ import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const colors = {
     bg: '#020617',

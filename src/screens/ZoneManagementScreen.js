@@ -10,8 +10,6 @@ import {
     Dimensions,
     KeyboardAvoidingView,
     Platform,
-    LayoutAnimation,
-    UIManager,
     StatusBar,
     ActivityIndicator
 } from 'react-native';
@@ -32,10 +30,6 @@ import Colors from '../theme/colors';
 import AstraTouchable from '../components/AstraTouchable';
 
 const { width } = Dimensions.get('window');
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const colors = Colors;
 
@@ -59,7 +53,6 @@ export default function ZoneManagementScreen({ navigation }) {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok && res.data) {
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 const zoneList = Array.isArray(res.data) ? res.data : (res.data.zones || []);
                 setZones(zoneList.map(z => ({
                     id: z.id,
@@ -135,7 +128,6 @@ export default function ZoneManagementScreen({ navigation }) {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         if (res.ok && res.data) {
-                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                             setZones(prev => prev.filter(z => z.id !== id));
                         }
                     } catch (error) {
@@ -225,7 +217,6 @@ export default function ZoneManagementScreen({ navigation }) {
                 <TouchableOpacity 
                     style={styles.formTrigger}
                     onPress={() => {
-                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                         setIsAddingZone(!isAddingZone);
                     }}
                 >

@@ -10,7 +10,6 @@ import {
     Alert,
     Image,
     Dimensions,
-    LayoutAnimation,
     Platform,
     UIManager,
     Modal,
@@ -31,10 +30,6 @@ import { getFCMToken } from '../hooks/useNotifications';
 import Colors from '../theme/colors';
 
 const { width, height } = Dimensions.get('window');
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const colors = Colors;
 

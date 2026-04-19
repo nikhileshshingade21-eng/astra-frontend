@@ -25,10 +25,6 @@ import AstraTouchable from '../components/AstraTouchable';
 
 const { width } = Dimensions.get('window');
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 const colors = Colors;
 
 export default function LeaveScreen({ route, navigation }) {

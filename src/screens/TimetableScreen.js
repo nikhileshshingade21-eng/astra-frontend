@@ -9,8 +9,7 @@ import {
     StatusBar, 
     Dimensions,
     Platform,
-    UIManager,
-    LayoutAnimation
+    UIManager
 } from 'react-native';
 import * as SecureStore from '../utils/storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -27,10 +26,6 @@ import { fetchWithTimeout, fetchWithCache } from '../utils/api';
 import Colors from '../theme/colors';
 
 const { width } = Dimensions.get('window');
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const getCurrentWeekDates = () => {
     const today = new Date();
@@ -139,7 +134,6 @@ export default function TimetableScreen({ route, navigation }) {
                     return { ...c, startMin, endMin, live_status: liveStatus };
                 });
                 
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setClasses(enhancedClasses);
                 setCalendarEvent(data.calendar_event || null);
             };

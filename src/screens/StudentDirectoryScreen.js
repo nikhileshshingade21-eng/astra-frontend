@@ -9,7 +9,6 @@ import {
     SafeAreaView,
     StatusBar,
     ActivityIndicator,
-    LayoutAnimation,
     Platform,
     UIManager,
     Dimensions,
@@ -25,10 +24,6 @@ import { fetchWithTimeout } from '../utils/api';
 import { STUDENTS } from '../data/students';
 
 const { width } = Dimensions.get('window');
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const colors = {
     bg: '#020617',
@@ -86,7 +81,6 @@ const StudentDirectoryScreen = ({ navigation }) => {
                             merged.push(s);
                         }
                     }
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setLiveData(merged);
                 }
             }
@@ -212,7 +206,6 @@ const StudentDirectoryScreen = ({ navigation }) => {
                             <TouchableOpacity
                                 key={item}
                                 onPress={() => {
-                                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                                     setSelectedBranch(item);
                                 }}
                                 style={[style.filterChip, selectedBranch === item && { borderColor: colors.neonBlue, backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}
@@ -226,7 +219,6 @@ const StudentDirectoryScreen = ({ navigation }) => {
                             <TouchableOpacity
                                 key={item}
                                 onPress={() => {
-                                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                                     setSelectedSection(item);
                                 }}
                                 style={[style.filterChip, selectedSection === item && { borderColor: colors.neonPurple, backgroundColor: 'rgba(191, 0, 255, 0.1)' }]}

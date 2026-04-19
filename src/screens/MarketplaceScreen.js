@@ -11,22 +11,16 @@ import {
     RefreshControl,
     StatusBar,
     Dimensions,
-    Platform,
-    UIManager,
     ScrollView
 } from 'react-native';
 import * as SecureStore from '../utils/storage';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Animated, { FadeInDown, FadeInUp, LayoutAnimation } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { fetchWithTimeout } from '../utils/api';
 import Colors from '../theme/colors';
 
 const { width, height } = Dimensions.get('window');
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const CATEGORIES = ['All', 'Books', 'Electronics', 'Stationery', 'Others'];
 

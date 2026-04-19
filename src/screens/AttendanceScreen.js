@@ -9,8 +9,6 @@ import {
     ScrollView,
     StatusBar,
     Dimensions,
-    Platform,
-    UIManager,
     Modal,
     TextInput,
     PermissionsAndroid

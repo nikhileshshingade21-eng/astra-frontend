@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Platform, UIManager, LayoutAnimation } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Platform, UIManager } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 // import { BlurView } from '@react-native-community/blur';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -7,10 +7,6 @@ import * as SecureStore from '../utils/storage';
 import { fetchWithTimeout } from '../utils/api';
 
 const { width } = Dimensions.get('window');
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const colors = {
     bg: '#020617',

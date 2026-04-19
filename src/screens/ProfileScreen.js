@@ -28,10 +28,6 @@ import { startAstraService, stopAstraService } from '../services/foregroundServi
 
 const { width } = Dimensions.get('window');
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 const BADGES = [
     { id: 'first_step', icon: '🎯', title: 'First Step', desc: 'Marked first attendance' },
     { id: 'week_warrior', icon: '🔥', title: 'Week Warrior', desc: '7-day streak' },

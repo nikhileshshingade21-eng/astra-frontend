@@ -7,10 +7,7 @@ import {
     RefreshControl,
     TouchableOpacity,
     Dimensions,
-    Platform,
-    UIManager,
     StatusBar,
-    LayoutAnimation
 } from 'react-native';
 import * as SecureStore from '../utils/storage';
 import LinearGradient from 'react-native-linear-gradient';
@@ -120,7 +117,6 @@ export default function DashboardScreen({ route, navigation }) {
                 return;
             }
             if (res.ok && res.data) {
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setStats({
                     ...res.data,
                     subjects: res.data.subjects || [],

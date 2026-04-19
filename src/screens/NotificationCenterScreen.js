@@ -20,10 +20,6 @@ import Colors from '../theme/colors';
 
 const { width, height } = Dimensions.get('window');
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 export default function NotificationCenterScreen({ navigation }) {
     const [notifications, setNotifications] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
