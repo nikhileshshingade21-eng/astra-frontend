@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, StatusBar } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, StatusBar, Alert } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import VerificationScreen from './src/screens/VerificationScreen';
 import AIChatbotScreen from './src/screens/AIChatbotScreen';
 import MarketplaceScreen from './src/screens/MarketplaceScreen';
 import MarketplaceChatScreen from './src/screens/MarketplaceChatScreen';
+import MarketplaceChatsScreen from './src/screens/MarketplaceChatsScreen';
 import FeedbackScreen from './src/screens/FeedbackScreen';
 import OrchestrationScreen from './src/screens/OrchestrationScreen';
 import TestLottieScreen from './src/screens/TestLottieScreen';
@@ -30,7 +31,9 @@ import AcademicCalendarScreen from './src/screens/AcademicCalendarScreen';
 import VersionChecker from './src/components/VersionChecker';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { Colors as ThemeColors } from './src/theme/colors';
-import { navigationRef } from './src/navigation/navigationService';
+import { navigationRef, navigate } from './src/navigation/navigationService';
+import io from 'socket.io-client';
+import { API_BASE } from './src/api/config';
 
 const colors = ThemeColors;
 
@@ -82,6 +85,42 @@ export default function App() {
     };
     bootstrapAsync();
   }, []);
+
+  // 🔔 GLOBAL MARKETPLACE CHAT LISTENER
+  React.useEffect(() => {
+    if (!userToken || !initialUser) return;
+    
+    const socket = io(API_BASE, { transports: ['websocket'] });
+    
+    socket.on('connect', () => {
+      socket.emit('join_user', initialUser.id);
+      console.log('[GLOBAL_SOCKET] Connected and joined user room:', initialUser.id);
+    });
+
+    socket.on('marketplace_message', (data) => {
+      // Show an alert if we receive a marketplace message
+      const payload = data?.data || data;
+      const msg = payload?.message;
+      if (msg && msg.sender_id !== initialUser.id) {
+        Alert.alert(
+          '💬 New Marketplace Message',
+          msg.message || 'You have a new message',
+          [
+            { text: 'Dismiss', style: 'cancel' },
+            { text: 'Open Chat', onPress: () => {
+              navigate('MarketplaceChats', { user: initialUser });
+            }}
+          ]
+        );
+      }
+    });
+
+    socket.on('disconnect', () => {
+      console.log('[GLOBAL_SOCKET] Disconnected');
+    });
+
+    return () => socket.disconnect();
+  }, [userToken, initialUser]);
 
   const [highReliabilityEnabled, setHighReliabilityEnabled] = React.useState(null);
 
@@ -148,6 +187,7 @@ export default function App() {
                 <Stack.Screen name="AIChatbot" component={AIChatbotScreen} />
                 <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
                 <Stack.Screen name="MarketplaceChat" component={MarketplaceChatScreen} />
+                <Stack.Screen name="MarketplaceChats" component={MarketplaceChatsScreen} />
                 <Stack.Screen name="Feedback" component={FeedbackScreen} />
                 <Stack.Screen name="TestLottie" component={TestLottieScreen} />
                 <Stack.Screen name="Attendance" component={AttendanceScreen} />
@@ -173,6 +213,7 @@ export default function App() {
                 <Stack.Screen name="AIChatbot" component={AIChatbotScreen} />
                 <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
                 <Stack.Screen name="MarketplaceChat" component={MarketplaceChatScreen} />
+                <Stack.Screen name="MarketplaceChats" component={MarketplaceChatsScreen} />
                 <Stack.Screen name="Feedback" component={FeedbackScreen} />
                 <Stack.Screen name="TestLottie" component={TestLottieScreen} />
                 <Stack.Screen name="Attendance" component={AttendanceScreen} />

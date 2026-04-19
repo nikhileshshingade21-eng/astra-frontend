@@ -12,7 +12,8 @@ import {
     StatusBar,
     Dimensions,
     ScrollView,
-    Image
+    Image,
+    Platform
 } from 'react-native';
 import * as SecureStore from '../utils/storage';
 import LinearGradient from 'react-native-linear-gradient';
@@ -307,9 +308,14 @@ export default function MarketplaceScreen({ route, navigation }) {
                         <Text style={styles.sub}>Campus Exchange</Text>
                     </View>
                 </View>
-                <TouchableOpacity style={styles.addBtn} onPress={() => { setIsAdding(!isAdding); }}>
-                    <Ionicons name={isAdding ? "close" : "add"} size={28} color={Colors.primary} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('MarketplaceChats', { user })}>
+                        <Ionicons name="chatbubbles-outline" size={22} color={Colors.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.addBtn} onPress={() => { setIsAdding(!isAdding); }}>
+                        <Ionicons name={isAdding ? "close" : "add"} size={28} color={Colors.primary} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Search and Filters */}
