@@ -13,6 +13,7 @@ import {
     TextInput,
     PermissionsAndroid,
     InteractionManager
+} from 'react-native';
 import * as SecureStore from '../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
