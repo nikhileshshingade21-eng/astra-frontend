@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
 
     permBtn: { width: '100%', height: 60, borderRadius: 20, overflow: 'hidden' },
     permGrad: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    permText: { fontFamily: 'Tanker', fontSize: 16, color: '#000', letterSpacing: 1 },
+    permText: { fontFamily: 'Tanker', fontSize: 16, color: '#fff', letterSpacing: 1 },
 
     protocolHub: { marginTop: 40 },
     protocolTitle: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.textDim, letterSpacing: 3, marginBottom: 15 },

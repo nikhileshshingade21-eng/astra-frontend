@@ -475,8 +475,8 @@ export default function DashboardScreen({ route, navigation }) {
 
             <TouchableOpacity style={[styles.actionButton, { marginTop: 16 }]} onPress={() => navigation.navigate('Tools', { user })}>
                 <LinearGradient colors={Colors.gradientAccent} style={styles.actionButtonGrad}>
-                    <Ionicons name="construct-outline" size={20} color="#000" />
-                    <Text style={[styles.actionButtonText, { color: '#000' }]}>System Administration</Text>
+                    <Ionicons name="construct-outline" size={20} color="#fff" />
+                    <Text style={[styles.actionButtonText, { color: '#fff' }]}>System Administration</Text>
                 </LinearGradient>
             </TouchableOpacity>
         </>

@@ -118,7 +118,7 @@ export default function LeaveScreen({ route, navigation }) {
                     </View>
                     <TouchableOpacity style={styles.submitBtn} onPress={submitLeave} disabled={applying}>
                         <LinearGradient colors={[colors.neonPurple, colors.neonPink]} style={styles.submitGrad}>
-                            {applying ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.submitText}>SUBMIT REQUEST</Text>}
+                            {applying ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.submitText}>SUBMIT REQUEST</Text>}
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     textArea: { height: 80, textAlignVertical: 'top', paddingTop: 12 },
     submitBtn: { height: 50, borderRadius: 12, overflow: 'hidden', marginTop: 25 },
     submitGrad: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    submitText: { fontFamily: 'Tanker', fontSize: 16, color: '#000', letterSpacing: 1 },
+    submitText: { fontFamily: 'Tanker', fontSize: 16, color: '#fff', letterSpacing: 1 },
 
     historySection: { gap: 12 },
     secTitle: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.textDim, letterSpacing: 3, marginBottom: 15 },

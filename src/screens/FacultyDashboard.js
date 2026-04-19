@@ -199,7 +199,7 @@ export default function FacultyDashboard({ route, navigation }) {
                 </View>
                 <TouchableOpacity style={styles.broadcastTrigger} onPress={() => setShowBroadcast(true)}>
                     <LinearGradient colors={[colors.neonGreen, colors.neonBlue]} style={styles.broadcastGrad}>
-                        <Ionicons name="wifi" size={16} color="#000" />
+                        <Ionicons name="wifi" size={16} color="#fff" />
                         <Text style={styles.broadcastText}>SHARE QR</Text>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     
     broadcastTrigger: { borderRadius: 12, overflow: 'hidden', elevation: 10, shadowColor: colors.neonGreen, shadowOpacity: 0.3, shadowRadius: 10 },
     broadcastGrad: { paddingHorizontal: 15, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },
-    broadcastText: { fontFamily: 'Satoshi-Black', fontSize: 10, color: '#000', letterSpacing: 1 },
+    broadcastText: { fontFamily: 'Satoshi-Black', fontSize: 10, color: '#fff', letterSpacing: 1 },
 
     classSection: { marginBottom: 30 },
     secLabel: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.textDim, letterSpacing: 3, marginLeft: 24, marginBottom: 15 },

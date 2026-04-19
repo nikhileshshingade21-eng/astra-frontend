@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     input: { height: 48, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 12, paddingHorizontal: 15, color: '#fff', fontFamily: 'Satoshi-Bold', fontSize: 13, borderWidth: 1, borderColor: colors.border },
     deployBtn: { height: 50, borderRadius: 12, overflow: 'hidden', marginTop: 10 },
     deployGrad: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    deployText: { fontFamily: 'Tanker', fontSize: 16, color: '#000', letterSpacing: 1 },
+    deployText: { fontFamily: 'Tanker', fontSize: 16, color: '#fff', letterSpacing: 1 },
 
     card: { padding: 20, borderRadius: 28, borderWidth: 1, borderColor: colors.border, marginBottom: 16, overflow: 'hidden' },
     cardInactive: { opacity: 0.5 },

@@ -646,7 +646,7 @@ const styles = StyleSheet.create({
     successItem: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(255,255,255,0.02)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
     successText: { fontFamily: 'Satoshi-Black', fontSize: 11, color: '#fff', letterSpacing: 1 },
     finishBtn: { width: '100%', height: 70, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginTop: 60 },
-    finishBtnText: { fontFamily: 'Tanker', fontSize: 20, color: '#000', letterSpacing: 1 },
+    finishBtnText: { fontFamily: 'Tanker', fontSize: 20, color: '#fff', letterSpacing: 1 },
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: '#0f172a', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, minHeight: 400 },

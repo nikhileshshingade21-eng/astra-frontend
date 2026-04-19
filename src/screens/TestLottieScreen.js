@@ -96,5 +96,5 @@ const styles = StyleSheet.create({
     hint: { fontFamily: 'Satoshi', fontSize: 10, color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: 10 },
     auditBox: { marginTop: 40, padding: 20, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: colors.border },
     ssBtn: { height: 50, borderRadius: 12, backgroundColor: colors.neonBlue, justifyContent: 'center', alignItems: 'center' },
-    ssText: { fontFamily: 'Tanker', fontSize: 14, color: '#000' }
+    ssText: { fontFamily: 'Tanker', fontSize: 14, color: '#fff' }
 });

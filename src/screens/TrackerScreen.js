@@ -133,7 +133,7 @@ export default function TrackerScreen({ route, navigation }) {
                         onChangeText={setSearchQuery}
                     />
                     <TouchableOpacity style={[styles.searchAction, { backgroundColor: roleColor }]} onPress={searchStudent}>
-                        <Ionicons name="search" size={20} color="#000" />
+                        <Ionicons name="search" size={20} color="#fff" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
 
     intelBtn: { height: 60, borderRadius: 20, overflow: 'hidden', marginTop: 30 },
     intelGrad: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    intelText: { fontFamily: 'Tanker', fontSize: 14, color: '#000', letterSpacing: 1 },
+    intelText: { fontFamily: 'Tanker', fontSize: 14, color: '#fff', letterSpacing: 1 },
 
     emptyBox: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 15, opacity: 0.5 },
     emptyText: { fontFamily: 'Tanker', fontSize: 24, color: '#fff', marginTop: 10 },

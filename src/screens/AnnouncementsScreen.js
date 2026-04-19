@@ -328,7 +328,7 @@ export default function AnnouncementsScreen() {
                 {(userRole === 'faculty' || userRole === 'admin') && (
                     <AstraTouchable style={styles.addBtn} onPress={() => setModalVisible(true)}>
                         <LinearGradient colors={colors.gradientPrimary} style={styles.addBtnGrad}>
-                            <Ionicons name="flash-outline" size={24} color="#000" />
+                            <Ionicons name="flash-outline" size={24} color="#fff" />
                         </LinearGradient>
                     </AstraTouchable>
                 )}
@@ -584,6 +584,6 @@ const styles = StyleSheet.create({
     catChipText: { fontFamily: 'Satoshi-Black', fontSize: 9, color: colors.textDim, letterSpacing: 1 },
     executeBtn: { height: 70, borderRadius: 25, overflow: 'hidden' },
     executeGrad: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    executeText: { fontFamily: 'Tanker', fontSize: 22, color: '#000', letterSpacing: 1 }
+    executeText: { fontFamily: 'Tanker', fontSize: 22, color: '#fff', letterSpacing: 1 }
 });
 

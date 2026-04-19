@@ -103,7 +103,7 @@ export default function FeedbackScreen({ navigation }) {
 
                     <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={loading}>
                         <LinearGradient colors={[colors.neonBlue, colors.neonPurple]} style={styles.submitGrad}>
-                            {loading ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.submitText}>SEND FEEDBACK</Text>}
+                            {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.submitText}>SEND FEEDBACK</Text>}
                         </LinearGradient>
                     </TouchableOpacity>
 
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
 
     submitBtn: { height: 60, borderRadius: 20, overflow: 'hidden', marginTop: 30 },
     submitGrad: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    submitText: { fontFamily: 'Tanker', fontSize: 18, color: '#000', letterSpacing: 1 },
+    submitText: { fontFamily: 'Tanker', fontSize: 18, color: '#fff', letterSpacing: 1 },
 
     securityHub: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 40, opacity: 0.5 },
     securityText: { fontFamily: 'Satoshi-Black', fontSize: 8, color: '#fff', letterSpacing: 1 }

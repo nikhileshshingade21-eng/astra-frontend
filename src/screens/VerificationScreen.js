@@ -209,7 +209,7 @@ export default function VerificationScreen({ route, navigation }) {
                 {!isActive ? (
                     <TouchableOpacity style={styles.startBtn} onPress={handleStart}>
                         <LinearGradient colors={[colors.neonBlue, colors.neonPurple]} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.startBtnGrad}>
-                            <Ionicons name="flash-outline" size={20} color="#000" style={{ marginRight: 10 }} />
+                            <Ionicons name="flash-outline" size={20} color="#fff" style={{ marginRight: 10 }} />
                             <Text style={styles.startBtnText}>START VERIFICATION</Text>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
 
     startBtn: { borderRadius: 20, overflow: 'hidden', marginBottom: 20 },
     startBtnGrad: { height: 60, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-    startBtnText: { fontFamily: 'Tanker', fontSize: 18, color: '#000', letterSpacing: 1 },
+    startBtnText: { fontFamily: 'Tanker', fontSize: 18, color: '#fff', letterSpacing: 1 },
 
     stopBtn: { height: 60, borderRadius: 20, borderWidth: 1, borderColor: colors.hot + '40', backgroundColor: 'rgba(255, 61, 113, 0.05)', marginBottom: 20 },
     stopContent: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },

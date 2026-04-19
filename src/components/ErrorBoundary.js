@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     subtitle: { fontFamily: 'Satoshi-Bold', fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 10, textAlign: 'center' },
     errorText: { fontFamily: 'Satoshi', fontSize: 10, color: '#ff3d71', marginTop: 20, textAlign: 'center', opacity: 0.8 },
     btn: { marginTop: 40, height: 50, paddingHorizontal: 30, borderRadius: 15, backgroundColor: '#00f2ff', justifyContent: 'center', alignItems: 'center' },
-    btnText: { fontFamily: 'Tanker', fontSize: 14, color: '#000' }
+    btnText: { fontFamily: 'Tanker', fontSize: 14, color: '#fff' }
 });
 
 export default ErrorBoundary;
