@@ -59,8 +59,6 @@ export default function AttendanceScreen({ route, navigation }) {
     const [stats, setStats] = useState(null);
     const [usePassword, setUsePassword] = useState(false);
     const [password, setPassword] = useState('');
-    const [usePassword, setUsePassword] = useState(false);
-    const [password, setPassword] = useState('');
     const isFocused = useIsFocused();
     
     // Animation Shared Values

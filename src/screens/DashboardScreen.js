@@ -15,7 +15,6 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { fetchWithTimeout, fetchWithCache } from '../utils/api';
 import AstraLottie from '../components/AstraLottie';
 import WeatherWidget from '../components/WeatherWidget';
-import { io } from 'socket.io-client';
 import { API_BASE } from '../api/config';
 import Animated, {
     FadeInUp,
@@ -31,6 +30,7 @@ import Animated, {
 import { Colors } from '../theme/colors';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import { useNotifications } from '../hooks/useNotifications';
+import { useAstraSocket } from '../hooks/useAstraSocket';
 import AstraTouchable from '../components/AstraTouchable';
 
 const { width } = Dimensions.get('window');
@@ -84,7 +84,9 @@ export default function DashboardScreen({ route, navigation }) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
-    const [activeNotification, setActiveNotification] = useState(null);
+
+    // V4: Centralized socket + AppState lifecycle management
+    const { activeNotification, dismissNotification } = useAstraSocket(user?.id);
 
     // Animations
     const streakPulse = useSharedValue(1);
@@ -134,29 +136,7 @@ export default function DashboardScreen({ route, navigation }) {
 
     useEffect(() => {
         loadDashboard();
-
-        let socket;
-        if (user?.id) {
-            const initSocket = async () => {
-                const socketToken = await SecureStore.getItemAsync('token');
-                socket = io(API_BASE, {
-                    transports: ['websocket'],
-                    query: { token: socketToken || '' }
-                });
-
-                socket.on('connect', () => {
-                    socket.emit('join_user', user.id);
-                });
-
-                socket.on('LIVE_NOTIFICATION', (payload) => {
-                    setActiveNotification(payload);
-                    setTimeout(() => setActiveNotification(null), 6000);
-                });
-            };
-            initSocket();
-        }
-        return () => { if (socket) socket.disconnect(); };
-    }, [loadDashboard, user?.id]);
+    }, [loadDashboard]);
 
     const streakStyle = useAnimatedStyle(() => ({
         transform: [{ scale: (stats?.streak > 0) ? streakPulse.value : 1 }],
@@ -487,10 +467,10 @@ export default function DashboardScreen({ route, navigation }) {
             {/* ── Notification Toast ──────────── */}
             {activeNotification && (
                 <Animated.View entering={FadeInUp.springify().damping(15)} exiting={FadeOutUp} style={styles.toastContainer}>
-                    <TouchableOpacity style={styles.toast} onPress={() => setActiveNotification(null)} activeOpacity={0.9}>
+                    <TouchableOpacity style={styles.toast} onPress={dismissNotification} activeOpacity={0.9}>
                         <LinearGradient colors={['rgba(26,32,53,0.95)', 'rgba(10,14,26,0.98)']} style={styles.toastGrad}>
-                            <View style={[styles.toastAccent, { backgroundColor: Colors.primary }]} />
-                            <Ionicons name="notifications" size={20} color={Colors.primary} />
+                            <View style={[styles.toastAccent, { backgroundColor: activeNotification.type === 'overdue_alert' ? Colors.warning : Colors.primary }]} />
+                            <Ionicons name={activeNotification.type === 'overdue_alert' ? 'alert-circle' : 'notifications'} size={20} color={activeNotification.type === 'overdue_alert' ? Colors.warning : Colors.primary} />
                             <View style={styles.toastContent}>
                                 <Text style={styles.toastTitle}>{activeNotification.title}</Text>
                                 <Text style={styles.toastBody} numberOfLines={2}>{activeNotification.body}</Text>

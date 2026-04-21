@@ -20,8 +20,8 @@ import { API_BASE } from '../api/config';
  * ─────────────────────────────────────────────────────────────
  */
 
-const CACHE_KEY = '@astra_update_check';
-const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours
+const CACHE_KEY = '@astra_app_update_info';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const APK_FILENAME = 'astra_update.apk';
 
 // Get native module (will be null on iOS or if not linked)
